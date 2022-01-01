@@ -16,7 +16,7 @@
 
 import bpy
 from bpy.props import *
-from . import MaterialsWriter
+from ..exporter import material_writer
 
 
 def convertDictionaryToBlenderEnumItems(dict):
@@ -41,15 +41,15 @@ class MaterialProperties(bpy.types.PropertyGroup):
         default = "ksPerPixel")
     alphaBlendMode: EnumProperty(
         name="Alpha Blend Mode",
-        items = convertDictionaryToBlenderEnumItems(MaterialsWriter.BlendMode),
-        default = str(MaterialsWriter.BlendMode["Opaque"]))
+        items = convertDictionaryToBlenderEnumItems(material_writer.BlendMode),
+        default = str(material_writer.BlendMode["Opaque"]))
     alphaTested: BoolProperty(
         name="Alpha Tested",
         default = False)
     depthMode: EnumProperty(
         name="Depth Mode",
-        items=convertDictionaryToBlenderEnumItems(MaterialsWriter.DepthMode),
-        default = str(MaterialsWriter.DepthMode["DepthNormal"]))
+        items=convertDictionaryToBlenderEnumItems(material_writer.DepthMode),
+        default = str(material_writer.DepthMode["DepthNormal"]))
     shaderProperties: CollectionProperty(
         type=ShaderPropertyItem)
     shaderPropertiesActive: IntProperty(
@@ -130,7 +130,7 @@ class MaterialShaderPropertyRemoveButton(bpy.types.Operator):
         return{'FINISHED'}
 
 
-classes = (
+REGISTER_CLASSES = (
     ShaderPropertyItem,
     MaterialProperties,
     KN5_UL_ShaderPropertiesList,
@@ -141,14 +141,12 @@ classes = (
 
 
 def register():
-    from bpy.utils import register_class
-    for cls in classes:
-        register_class(cls)
+    for cls in REGISTER_CLASSES:
+        bpy.utils.register_class(cls)
     bpy.types.Material.assettoCorsa = bpy.props.PointerProperty(type=MaterialProperties)
 
 
 def unregister():
     del bpy.types.Material.assettoCorsa
-    from bpy.utils import unregister_class
-    for cls in reversed(classes):
-        unregister_class(cls)
+    for cls in reversed(REGISTER_CLASSES):
+        bpy.utils.unregister_class(cls)

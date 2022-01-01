@@ -16,7 +16,7 @@
 
 import os
 import tempfile
-from . import kn5Helper
+from . import utils
 
 
 class TextureWriter():
@@ -39,7 +39,6 @@ class TextureWriter():
         imageData=self.getImageDataFromTexture(texture)
         kn5Helper.writeBlob(self.file, imageData)
 
-
     def fillAvailableImageTextures(self):
         self.availableTextures={}
         self.texturePositions={}
@@ -56,6 +55,7 @@ class TextureWriter():
                     self.availableTextures[texture.name] = texture
                     self.texturePositions[texture.name] = position
                     position+=1
+
     def getImageDataFromTexture(self, texture):
         image=texture.image
         imageCopy=image.copy()

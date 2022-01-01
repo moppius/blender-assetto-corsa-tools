@@ -13,10 +13,12 @@
 #
 # Copyright (C) 2014  Thomas Hagnhofer
 
+
 import numbers
 import os
 import re
-from . import kn5Helper
+from . import utils
+
 
 BlendMode = {
     "Opaque" : 0,

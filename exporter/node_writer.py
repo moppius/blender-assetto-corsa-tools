@@ -18,7 +18,7 @@ import mathutils
 import math
 import os
 import re
-from . import kn5Helper
+from . import utils
 
 
 NodeClass = {
@@ -417,6 +417,7 @@ class UvVertex:
         if self.tangent[0] != other.tangent[0] or self.tangent[1] != other.tangent[1] or self.tangent[2] != other.tangent[2]:
             return False
         return True
+
 
 class Mesh:
     def __init__(self, materialId, vertices, indices):

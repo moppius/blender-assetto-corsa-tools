@@ -14,6 +14,10 @@
 # Copyright (C) 2014  Thomas Hagnhofer
 
 
+from . import exporter, ui
+from .utils import register_recursive, unregister_recursive
+
+
 bl_info = {
     "name":        "Assetto Corsa (.kn5)",
     "version":     (0, 2, 0),
@@ -28,148 +32,20 @@ bl_info = {
 }
 
 
-import os
-import struct
-import sys
-import traceback
-import bpy
-from bpy.props import *
-from bpy_extras.io_utils import ExportHelper
-from . import (
-    kn5Helper,
-    TextureWriter,
-    MaterialsWriter,
-    NodeWriter,
-    MaterialsUi,
-    TexturesUi,
-    NodesUi,
-)
-
-
-class ReportOperator(bpy.types.Operator):
-    bl_idname = "kn5.report_message"
-    bl_label = "Export report"
-
-    isError: BoolProperty()
-    title: StringProperty()
-    message: StringProperty()
-
-    def execute(self, context):
-        if self.isError:
-            self.report({'WARNING'}, self.message)
-        else:
-            self.report({'INFO'}, self.message)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        self.execute(context)
-        wm = context.window_manager
-        return wm.invoke_popup(self, width=600)
-
-    def draw(self, context):
-        if self.isError:
-            self.layout.alert = True
-        row = self.layout.row()
-        row.alignment="CENTER"
-        row.label(text=self.title)
-        for line in self.message.splitlines():
-            row=self.layout.row()
-            line=line.replace("\t"," "*4)
-            row.label(text=line)
-        row = self.layout.row()
-        row.operator("kn5.report_clipboard").content=self.message
-
-
-class CopyClipboardButtonOperator(bpy.types.Operator):
-    bl_idname = "kn5.report_clipboard"
-    bl_label = "Copy to clipboard"
-
-    content: StringProperty()
-
-    def execute(self, context):
-        context.window_manager.clipboard = self.content
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        self.execute(context)
-        return {'FINISHED'}
-
-
-class ExportKN5(bpy.types.Operator, ExportHelper):
-    fileVersion = 5
-    bl_idname       = "exporter.kn5"
-    bl_label        = "Export KN5"
-    bl_description = "Export KN5"
-
-    filename_ext    = ".kn5"
-
-    def execute(self, context):
-        warnings = []
-        try:
-            outputFile = open(self.filepath,"wb")
-            try:
-                settings = kn5Helper.readSettings(self.filepath)
-                self.writeHeader(outputFile)
-                self.writeContent(outputFile, context, settings, warnings)
-                bpy.ops.kn5.report_message('INVOKE_DEFAULT', isError=False, title = "Export successfully",
-                                            message = os.linesep.join(warnings))
-            finally:
-                if not outputFile is None:
-                    outputFile.close()
-        except:
-            error=traceback.format_exc()
-            try:
-                os.remove(self.filepath) #Remove output file so that nobody has the chance
-                                         #to crash the engine with a broken file
-            except:
-                pass
-            warnings.append(error)
-            bpy.ops.kn5.report_message('INVOKE_DEFAULT', isError=True, title = "Export failed",
-                                       message = os.linesep.join(warnings))
-        return {'FINISHED'}
-
-    def writeHeader(self, file):
-        file.write(b"sc6969")
-        kn5Helper.writeUInt(file, self.fileVersion)
-
-    def writeContent(self, file, context, settings, warnings):
-        textureWriter = TextureWriter.TextureWriter(file, context, warnings)
-        textureWriter.write()
-        materialsWriter = MaterialsWriter.MaterialsWriter(file, context, settings, warnings)
-        materialsWriter.write()
-        nodeWriter = NodeWriter.NodeWriter(file, context, settings, warnings, materialsWriter)
-        nodeWriter.write()
-
-
-def menu_func(self, context):
-    self.layout.operator(ExportKN5.bl_idname, text="Assetto Corsa (.kn5)")
-
-
-classes = (
-    ReportOperator,
-    CopyClipboardButtonOperator,
-    ExportKN5,
+REGISTER_CLASSES = (
+    exporter,
+    ui,
 )
 
 
 def register():
-    from bpy.utils import register_class
-    for cls in classes:
-        register_class(cls)
-    bpy.types.TOPBAR_MT_file_export.append(menu_func)
-    MaterialsUi.register()
-    TexturesUi.register()
-    NodesUi.register()
+    """Register all of the addon's classes."""
+    register_recursive(REGISTER_CLASSES)
 
 
 def unregister():
-    NodesUi.unregister()
-    TexturesUi.unregister()
-    MaterialsUi.unregister()
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func)
-    from bpy.utils import unregister_class
-    for cls in reversed(classes):
-        unregister_class(cls)
+    """Unregister all of the addon's classes."""
+    unregister_recursive(REGISTER_CLASSES)
 
 
 if __name__ == "__main__":

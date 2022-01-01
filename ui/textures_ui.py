@@ -41,20 +41,18 @@ class KN5_PT_TexturePanel(bpy.types.Panel):
         self.layout.prop(ac, "shaderInputName")
 
 
-classes = (
+REGISTER_CLASSES = (
     TextureProperties,
     KN5_PT_TexturePanel,
 )
 
 def register():
-    from bpy.utils import register_class
-    for cls in classes:
-        register_class(cls)
+    for cls in REGISTER_CLASSES:
+        bpy.utils.register_class(cls)
     bpy.types.Texture.assettoCorsa = bpy.props.PointerProperty(type=TextureProperties)
 
 
 def unregister():
     del bpy.types.Texture.assettoCorsa
-    from bpy.utils import unregister_class
-    for cls in reversed(classes):
-        unregister_class(cls)
+    for cls in reversed(REGISTER_CLASSES):
+        bpy.utils.unregister_class(cls)
