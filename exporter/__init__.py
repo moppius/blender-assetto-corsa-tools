@@ -14,12 +14,14 @@
 # Copyright (C) 2014  Thomas Hagnhofer
 
 
+import os
 import bpy
 from bpy_extras.io_utils import ExportHelper
 from .texture_writer import TextureWriter
 from .material_writer import MaterialsWriter
 from .node_writer import NodeWriter
 from . import utils
+from ..utils.constants import KN5_HEADER_BYTES
 
 
 class ExportKN5(bpy.types.Operator, ExportHelper):
@@ -33,39 +35,47 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         warnings = []
         try:
-            outputFile = open(self.filepath,"wb")
+            output_file = open(self.filepath,"wb")
             try:
                 settings = kn5Helper.readSettings(self.filepath)
-                self.writeHeader(outputFile)
-                self.writeContent(outputFile, context, settings, warnings)
-                bpy.ops.kn5.report_message('INVOKE_DEFAULT', isError=False, title = "Export successfully",
-                                            message = os.linesep.join(warnings))
+                self._write_header(output_file)
+                self._write_content(output_file, context, settings, warnings)
+                bpy.ops.kn5.report_message(
+                    'INVOKE_DEFAULT',
+                    isError=False,
+                    title = "Export successfully",
+                    message = os.linesep.join(warnings)
+                )
             finally:
-                if not outputFile is None:
-                    outputFile.close()
+                if not output_file is None:
+                    output_file.close()
         except:
-            error=traceback.format_exc()
+            error = traceback.format_exc()
             try:
-                os.remove(self.filepath) #Remove output file so that nobody has the chance
-                                         #to crash the engine with a broken file
+                os.remove(self.filepath) # Remove output file so that nobody has the chance
+                                         # to crash the engine with a broken file
             except:
                 pass
             warnings.append(error)
-            bpy.ops.kn5.report_message('INVOKE_DEFAULT', isError=True, title = "Export failed",
-                                       message = os.linesep.join(warnings))
+            bpy.ops.kn5.report_message(
+                'INVOKE_DEFAULT',
+                isError=True,
+                title = "Export failed",
+                message = os.linesep.join(warnings)
+            )
         return {'FINISHED'}
 
-    def writeHeader(self, file):
-        file.write(b"sc6969")
-        kn5Helper.writeUInt(file, self.fileVersion)
+    def _write_header(self, output_file):
+        output_file.write(KN5_HEADER_BYTES)
+        kn5Helper.writeUInt(output_file, self.fileVersion)
 
-    def writeContent(self, file, context, settings, warnings):
-        textureWriter = TextureWriter(file, context, warnings)
-        textureWriter.write()
-        materialsWriter = MaterialsWriter(file, context, settings, warnings)
-        materialsWriter.write()
-        nodeWriter = NodeWriter(file, context, settings, warnings, materialsWriter)
-        nodeWriter.write()
+    def _write_content(self, output_file, context, settings, warnings):
+        texture_writer = TextureWriter(output_file, context, warnings)
+        texture_writer.write()
+        material_writer = MaterialsWriter(output_file, context, settings, warnings)
+        material_writer.write()
+        node_writer = NodeWriter(output_file, context, settings, warnings, material_writer)
+        node_writer.write()
 
 
 def menu_func(self, context):
