@@ -17,6 +17,7 @@ import bpy
 from kn5exporter import MaterialsWriter
 from bpy.props import *
 
+
 def convertDictionaryToBlenderEnumItems(dict):
     items=[]
     for key in dict:
@@ -24,33 +25,36 @@ def convertDictionaryToBlenderEnumItems(dict):
         items.append((val, key, val))
     return items
 
+
 class ShaderPropertyItem(bpy.types.PropertyGroup):
-    name = StringProperty(name="Property name", default="ksDiffuse")
-    valueA = FloatProperty(name="Value A")
-    valueB = FloatVectorProperty(name="Value B", size=2)
-    valueC = FloatVectorProperty(name="Value C", size=3)
-    valueD = FloatVectorProperty(name="Value D", size=4)
+    name: StringProperty(name="Property name", default="ksDiffuse")
+    valueA: FloatProperty(name="Value A")
+    valueB: FloatVectorProperty(name="Value B", size=2)
+    valueC: FloatVectorProperty(name="Value C", size=3)
+    valueD: FloatVectorProperty(name="Value D", size=4)
+
 
 class MaterialProperties(bpy.types.PropertyGroup):
-    shaderName = StringProperty(
-        name="Shader Name", 
+    shaderName: StringProperty(
+        name="Shader Name",
         default = "ksPerPixel")
-    alphaBlendMode = EnumProperty(
+    alphaBlendMode: EnumProperty(
         name="Alpha Blend Mode",
         items = convertDictionaryToBlenderEnumItems(MaterialsWriter.BlendMode),
         default = str(MaterialsWriter.BlendMode["Opaque"]))
-    alphaTested = BoolProperty(
-        name="Alpha Tested", 
+    alphaTested: BoolProperty(
+        name="Alpha Tested",
         default = False)
-    depthMode = EnumProperty(
+    depthMode: EnumProperty(
         name="Depth Mode",
         items=convertDictionaryToBlenderEnumItems(MaterialsWriter.DepthMode),
         default = str(MaterialsWriter.DepthMode["DepthNormal"]))
-    shaderProperties=CollectionProperty(
+    shaderProperties: CollectionProperty(
         type=ShaderPropertyItem)
-    shaderPropertiesActive = IntProperty(
+    shaderPropertiesActive: IntProperty(
         name="Active Shader Property",
         default=-1)
+
 
 class ShaderPropertiesList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -59,6 +63,7 @@ class ShaderPropertiesList(bpy.types.UIList):
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.prop(item,"name", text="", emboss=False)
+
 
 class MaterialPanel(bpy.types.Panel):
     bl_label = "Assetto Corsa"
@@ -70,7 +75,7 @@ class MaterialPanel(bpy.types.Panel):
     def poll(cls, context):
         if context.material is not None:
             return True
- 
+
     def draw(self, context):
         ac=context.material.assettoCorsa
         self.layout.prop(ac, "shaderName")
@@ -80,10 +85,10 @@ class MaterialPanel(bpy.types.Panel):
         shaderBox=self.layout.box()
         shaderBox.label("Shader Properties")
         if len(ac.shaderProperties) > 0:
-            shaderBox.template_list("ShaderPropertiesList", 
-                        "", 
-                        ac, 
-                        "shaderProperties", 
+            shaderBox.template_list("ShaderPropertiesList",
+                        "",
+                        ac,
+                        "shaderProperties",
                         ac,
                          "shaderPropertiesActive",
                          rows=1)
@@ -97,32 +102,51 @@ class MaterialPanel(bpy.types.Panel):
                 colB=row.column()
                 colB.prop(activeProp,"valueB")
                 colB.prop(activeProp,"valueC")
-    
+
         row=shaderBox.row()
         row.operator("acmaterialshaderproperties.add")
         row.operator("acmaterialshaderproperties.remove")
 
+
 class MaterialShaderPropertyAddButton(bpy.types.Operator):
     bl_idname = "acmaterialshaderproperties.add"
     bl_label = "Add Shader Property"
- 
+
     def execute(self, context):
         ac=context.material.assettoCorsa
         ac.shaderProperties.add()
         return{'FINISHED'}
-        
+
+
 class MaterialShaderPropertyRemoveButton(bpy.types.Operator):
     bl_idname = "acmaterialshaderproperties.remove"
     bl_label = "Remove Shader Property"
- 
+
     def execute(self, context):
-        ac=context.material.assettoCorsa
-        ac.shaderProperties.remove(
-            ac.shaderPropertiesActive)
-        return{'FINISHED'}  
-        
+        ac = context.material.assettoCorsa
+        ac.shaderProperties.remove(ac.shaderPropertiesActive)
+        return{'FINISHED'}
+
+
+classes = (
+    ShaderPropertyItem,
+    MaterialProperties,
+    ShaderPropertiesList,
+    MaterialPanel,
+    MaterialShaderPropertyAddButton,
+    MaterialShaderPropertyRemoveButton,
+)
+
+
 def register():
+    from bpy.utils import register_class
+    for cls in classes:
+        register_class(cls)
     bpy.types.Material.assettoCorsa = bpy.props.PointerProperty(type=MaterialProperties)
-    
+
+
 def unregister():
     del bpy.types.Material.assettoCorsa
+    from bpy.utils import unregister_class
+    for cls in reversed(classes):
+        unregister_class(cls)

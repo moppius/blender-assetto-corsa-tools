@@ -16,9 +16,10 @@
 import bpy
 from bpy.props import *
 
+
 class TextureProperties(bpy.types.PropertyGroup):
-    shaderInputName = StringProperty(
-        name="Shader Input Name", 
+    shaderInputName: StringProperty(
+        name="Shader Input Name",
         default = "txDiffuse",
         description ="Name of the shader input slot the texture should be assigned to")
 
@@ -28,18 +29,31 @@ class TexturePanel(bpy.types.Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "texture"
-    
+
     @classmethod
     def poll(cls, context):
         if context.texture is not None and context.texture.type == "IMAGE":
             return True
- 
+
     def draw(self, context):
         ac=context.texture.assettoCorsa
         self.layout.prop(ac, "shaderInputName")
 
+
+classes = (
+    TextureProperties,
+    TexturePanel,
+)
+
 def register():
+    from bpy.utils import register_class
+    for cls in classes:
+        register_class(cls)
     bpy.types.Texture.assettoCorsa = bpy.props.PointerProperty(type=TextureProperties)
-    
+
+
 def unregister():
     del bpy.types.Texture.assettoCorsa
+    from bpy.utils import unregister_class
+    for cls in reversed(classes):
+        unregister_class(cls)

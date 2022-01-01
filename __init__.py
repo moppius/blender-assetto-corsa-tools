@@ -15,9 +15,9 @@
 
 bl_info = {
     "name":         "Assetto Corsa (.kn5)",
-    "author":       "Thomas Hagnhofer",
-    "blender":      (2,7,1),
-    "version":      (0,1,1),
+    "author":       "Thomas Hagnhofer, Paul Greveson",
+    "blender":      (3,0,0),
+    "version":      (0,2,0),
     "location":     "File > Export",
     "description":  "Export to the Assetto Corsa KN5 format",
     "category":     "Import-Export",
@@ -40,76 +40,83 @@ if "bpy" in locals():
         imp.reload(TexturesUi)
     if "NodesUi" in locals():
         imp.reload(NodesUi)
-        
+
 import sys
 import os
 import traceback
 import struct
 import bpy
 from bpy.props import *
-from kn5exporter import (TextureWriter, 
-                        MaterialsWriter,
-                        NodeWriter,
-                        kn5Helper,
-                        MaterialsUi,
-                        TexturesUi,
-                        NodesUi)
+from kn5exporter import (
+    kn5Helper,
+    TextureWriter,
+    MaterialsWriter,
+    NodeWriter,
+    MaterialsUi,
+    TexturesUi,
+    NodesUi,
+)
 
 from bpy_extras.io_utils import ExportHelper
+
 
 class ReportOperator(bpy.types.Operator):
     bl_idname = "kn5.report_message"
     bl_label = "Export report"
-    isError = BoolProperty()
-    title = StringProperty()
-    message = StringProperty()
- 
+
+    isError: BoolProperty()
+    title: StringProperty()
+    message: StringProperty()
+
     def execute(self, context):
         if self.isError:
             self.report({'WARNING'}, self.message)
         else:
             self.report({'INFO'}, self.message)
         return {'FINISHED'}
- 
+
     def invoke(self, context, event):
         self.execute(context)
         wm = context.window_manager
-        return wm.invoke_popup(self, width=600, height=400)
+        return wm.invoke_popup(self, width=600)
 
     def draw(self, context):
         if self.isError:
-            self.layout.alert=True
-        row=self.layout.row()
+            self.layout.alert = True
+        row = self.layout.row()
         row.alignment="CENTER"
-        row.label(self.title)
+        row.label(text=self.title)
         for line in self.message.splitlines():
             row=self.layout.row()
             line=line.replace("\t"," "*4)
-            row.label(line)
-        row=self.layout.row()
+            row.label(text=line)
+        row = self.layout.row()
         row.operator("kn5.report_clipboard").content=self.message
- 
+
+
 class CopyClipboardButtonOperator(bpy.types.Operator):
     bl_idname = "kn5.report_clipboard"
     bl_label = "Copy to clipboard"
-    content=StringProperty()
-        
+
+    content: StringProperty()
+
     def execute(self, context):
-        context.window_manager.clipboard=self.content
+        context.window_manager.clipboard = self.content
         return {'FINISHED'}
-        
+
     def invoke(self, context, event):
         self.execute(context)
         return {'FINISHED'}
+
 
 class ExportKN5(bpy.types.Operator, ExportHelper):
     fileVersion = 5
     bl_idname       = "exporter.kn5"
     bl_label        = "Export KN5"
-    #bl_options      = set(["PRESET"])
-    
+    bl_description = "Export KN5"
+
     filename_ext    = ".kn5"
-    
+
     def execute(self, context):
         warnings = []
         try:
@@ -118,7 +125,7 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
                 settings = kn5Helper.readSettings(self.filepath)
                 self.writeHeader(outputFile)
                 self.writeContent(outputFile, context, settings, warnings)
-                bpy.ops.kn5.report_message('INVOKE_DEFAULT', isError=False, title = "Export successfully", 
+                bpy.ops.kn5.report_message('INVOKE_DEFAULT', isError=False, title = "Export successfully",
                                             message = os.linesep.join(warnings))
             finally:
                 if not outputFile is None:
@@ -126,19 +133,19 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
         except:
             error=traceback.format_exc()
             try:
-                os.remove(self.filepath) #Remove output file so that nobody has the chance 
+                os.remove(self.filepath) #Remove output file so that nobody has the chance
                                          #to crash the engine with a broken file
             except:
                 pass
             warnings.append(error)
-            bpy.ops.kn5.report_message('INVOKE_DEFAULT', isError=True, title = "Export failed", 
+            bpy.ops.kn5.report_message('INVOKE_DEFAULT', isError=True, title = "Export failed",
                                        message = os.linesep.join(warnings))
         return {'FINISHED'}
-    
+
     def writeHeader(self, file):
         file.write(b"sc6969")
         kn5Helper.writeUInt(file, self.fileVersion)
-        
+
     def writeContent(self, file, context, settings, warnings):
         textureWriter = TextureWriter.TextureWriter(file, context, warnings)
         textureWriter.write()
@@ -147,22 +154,37 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
         nodeWriter = NodeWriter.NodeWriter(file, context, settings, warnings, materialsWriter)
         nodeWriter.write()
 
+
 def menu_func(self, context):
     self.layout.operator(ExportKN5.bl_idname, text="Assetto Corsa (.kn5)")
 
+
+classes = (
+    ReportOperator,
+    CopyClipboardButtonOperator,
+    ExportKN5,
+)
+
+
 def register():
-    bpy.utils.register_module(__name__)
-    bpy.types.INFO_MT_file_export.append(menu_func)
+    from bpy.utils import register_class
+    for cls in classes:
+        register_class(cls)
+    bpy.types.TOPBAR_MT_file_export.append(menu_func)
     MaterialsUi.register()
     TexturesUi.register()
     NodesUi.register()
-    
+
+
 def unregister():
-    bpy.utils.unregister_module(__name__)
-    bpy.types.INFO_MT_file_export.remove(menu_func)
-    MaterialsUi.unregister()
-    TexturesUi.unregister()
     NodesUi.unregister()
+    TexturesUi.unregister()
+    MaterialsUi.unregister()
+    bpy.types.TOPBAR_MT_file_export.remove(menu_func)
+    from bpy.utils import unregister_class
+    for cls in reversed(classes):
+        unregister_class(cls)
+
 
 if __name__ == "__main__":
     register()

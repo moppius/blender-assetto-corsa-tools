@@ -16,34 +16,35 @@
 import bpy
 from bpy.props import *
 
+
 class NodeProperties(bpy.types.PropertyGroup):
-    lodIn = FloatProperty(
-        name="LOD In", 
+    lodIn: FloatProperty(
+        name="LOD In",
         min=0.0,
         unit="LENGTH",
         subtype="DISTANCE",
         description="Nearest distance to the object until it disapears")
-    lodOut = FloatProperty(
+    lodOut: FloatProperty(
         name="LOD Out",
         min=0.0,
         unit="LENGTH",
         subtype="DISTANCE",
         description="Farthest distance to the object until it disapears")
-    layer = IntProperty(
-        name="Layer", 
+    layer: IntProperty(
+        name="Layer",
         default = 0,
         description="Unknown behaviour")
-    castShadows = BoolProperty(
+    castShadows: BoolProperty(
         name="Cast Shadows",
         default = True)
-    visible=BoolProperty(
+    visible: BoolProperty(
         name="Visible",
         default=True,
         description="Unknown behaviour")
-    transparent = BoolProperty(
+    transparent: BoolProperty(
         name="Transparent",
         default=False)
-    renderable = BoolProperty(
+    renderable: BoolProperty(
         name="Renderable",
         default=True,
         description="Toggles if the object should be rendered or not")
@@ -59,7 +60,7 @@ class NodePanel(bpy.types.Panel):
     def poll(cls, context):
         if context.object is not None and context.object.type == "MESH":
             return True
- 
+
     def draw(self, context):
         ac=context.object.assettoCorsa
         self.layout.prop(ac, "renderable")
@@ -70,8 +71,22 @@ class NodePanel(bpy.types.Panel):
         self.layout.prop(ac, "layer")
         self.layout.prop(ac, "visible")
 
+
+classes = (
+    NodeProperties,
+    NodePanel,
+)
+
+
 def register():
+    from bpy.utils import register_class
+    for cls in classes:
+        register_class(cls)
     bpy.types.Object.assettoCorsa = bpy.props.PointerProperty(type=NodeProperties)
-    
+
+
 def unregister():
     del bpy.types.Object.assettoCorsa
+    from bpy.utils import unregister_class
+    for cls in reversed(classes):
+        unregister_class(cls)
