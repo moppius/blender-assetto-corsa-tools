@@ -43,7 +43,7 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
                 bpy.ops.kn5.report_message(
                     'INVOKE_DEFAULT',
                     isError=False,
-                    title = "Export successfully",
+                    title = "Exported successfully",
                     message = os.linesep.join(warnings)
                 )
             finally:
