@@ -42,9 +42,9 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
                 self._write_content(output_file, context, settings, warnings)
                 bpy.ops.kn5.report_message(
                     'INVOKE_DEFAULT',
-                    isError=False,
-                    title = "Exported successfully",
-                    message = os.linesep.join(warnings)
+                    is_error=False,
+                    title="Exported successfully",
+                    message=os.linesep.join(warnings)
                 )
             finally:
                 if not output_file is None:
@@ -59,9 +59,9 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
             warnings.append(error)
             bpy.ops.kn5.report_message(
                 'INVOKE_DEFAULT',
-                isError=True,
-                title = "Export failed",
-                message = os.linesep.join(warnings)
+                is_error=True,
+                title="Export failed",
+                message=os.linesep.join(warnings)
             )
         return {'FINISHED'}
 

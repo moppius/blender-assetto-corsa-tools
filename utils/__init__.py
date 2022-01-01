@@ -29,12 +29,12 @@ class ReportOperator(bpy.types.Operator):
     bl_idname = "kn5.report_message"
     bl_label = "Export report"
 
-    isError: BoolProperty()
+    is_error: BoolProperty()
     title: StringProperty()
     message: StringProperty()
 
     def execute(self, context):
-        if self.isError:
+        if self.is_error:
             self.report({'WARNING'}, self.message)
         else:
             self.report({'INFO'}, self.message)
@@ -46,7 +46,7 @@ class ReportOperator(bpy.types.Operator):
         return wm.invoke_popup(self, width=600)
 
     def draw(self, context):
-        if self.isError:
+        if self.is_error:
             self.layout.alert = True
         row = self.layout.row()
         row.alignment="CENTER"
