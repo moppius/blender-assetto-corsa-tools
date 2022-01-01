@@ -18,6 +18,7 @@ import numbers
 import os
 import re
 from .exporter_utils import (
+    get_active_material_texture_slot,
     writeBool,
     writeByte,
     writeInt,
@@ -96,7 +97,7 @@ class MaterialsWriter():
             if material.users == 0:
                 self.warnings.append("Ignoring unused material '%s'" % material.name)
             elif not material.name.startswith("__"):
-                if not getActiveMaterialTextureSlot(material):
+                if not get_active_material_texture_slot(material):
                     self.warnings.append("No active texture for material '%s' found.%s\tUsing default UV scaling for objects without UV maps."% (material.name, os.linesep))
                 materialProperties=MaterialProperties(material)
                 for setting in self.materialSettings:

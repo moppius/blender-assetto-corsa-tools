@@ -79,6 +79,18 @@ def convertQuaternion(q):
     return mathutils.Quaternion(axis, angle)
 
 
+def get_active_material_texture_slot(material):
+    if material and material.node_tree:
+        for node in material.node_tree.nodes:
+            if isinstance(node, classbpy.types.TextureNodeImage):
+                return node
+    # FIXME: Remove this
+    #for textureIndex in range(0, len(material.texture_slots)):
+    #    if material.texture_slots[textureIndex] is not None and material.texture_slots[textureIndex].use:
+    #       return material.texture_slots[textureIndex]
+    return None
+
+
 def readSettings(file):
     fullPath=os.path.abspath(file)
     dirName=os.path.dirname(fullPath)
@@ -86,13 +98,3 @@ def readSettings(file):
     if not os.path.exists(settingsPath):
         return {}
     return json.loads(open(settingsPath, "r").read())
-
-def getActiveMaterialTextureSlot(material):
-    if material and material.node_tree:
-        for node in material.node_tree.nodes:
-            if isinstance(node, classbpy.types.TextureNodeImage):
-                return node
-    #for textureIndex in range(0, len(material.texture_slots)):
-    #    if material.texture_slots[textureIndex] is not None and material.texture_slots[textureIndex].use:
-    #       return material.texture_slots[textureIndex]
-    return None

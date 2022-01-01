@@ -280,17 +280,18 @@ class NodeWriter():
         return newMeshes
 
     def calculateUvs(self, object, mesh, materialId, co):
-        size=object.dimensions
-        x=co[0]/size[0]
-        y=co[1]/size[1]
-        mat=mesh.materials[materialId]
-        textureSlot=utils.getActiveMaterialTextureSlot(mat)
-        if textureSlot is not None:
-            x*=textureSlot.scale[0]
-            y*=textureSlot.scale[1]
-            x+=textureSlot.offset[0]
-            y+=textureSlot.offset[1]
+        size = object.dimensions
+        x = co[0]/size[0]
+        y = co[1]/size[1]
+        mat = mesh.materials[materialId]
+        textureSlot = utils.get_active_material_texture_slot(mat)
+        if textureSlot:
+            x *= textureSlot.scale[0]
+            y *= textureSlot.scale[1]
+            x += textureSlot.offset[0]
+            y += textureSlot.offset[1]
         return (x, y)
+
 
 class NodeProperties:
     def __init__(self, node):
@@ -303,6 +304,7 @@ class NodeProperties:
         self.visible = ac.visible
         self.transparent = ac.transparent
         self.renderable = ac.renderable
+
 
 class NodeSettings:
     def __init__(self, settings, nodeSettingsKey):
