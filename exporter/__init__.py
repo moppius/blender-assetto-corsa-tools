@@ -19,10 +19,10 @@ import os
 import bpy
 from bpy.props import BoolProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper
-from . import utils
 from .texture_writer import TextureWriter
 from .material_writer import MaterialsWriter
 from .node_writer import NodeWriter
+from .exporter_utils import writeUInt
 from ..utils import readSettings
 from ..utils.constants import KN5_HEADER_BYTES
 
@@ -119,7 +119,7 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
 
     def _write_header(self, output_file):
         output_file.write(KN5_HEADER_BYTES)
-        utils.writeUInt(output_file, self.fileVersion)
+        writeUInt(output_file, self.fileVersion)
 
     def _write_content(self, output_file, context, settings, warnings):
         texture_writer = TextureWriter(output_file, context, warnings)

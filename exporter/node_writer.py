@@ -18,7 +18,16 @@ import mathutils
 import math
 import os
 import re
-from . import utils
+from .exporter_utils import (
+    writeBool,
+    writeFloat,
+    writeMatrix,
+    writeString,
+    writeUInt,
+    writeUShort,
+    writeVector2,
+    writeVector3,
+)
 from ..utils.constants import ASSETTO_CORSA_OBJECTS
 
 
@@ -93,7 +102,7 @@ class NodeWriter():
         else:
             if not self.isAcObject(object.name) and not self.anyChildIsMesh(object):
                 self.warnings.append("Unknown logical object '{0}' might prevent other objects from loading.{1}\tRename it to '__{0}' if you do not want to export it.".format(object.name, os.linesep))
-            matrix = kn5Helper.convertMatrix(object.matrix_local)
+            matrix = utils.convertMatrix(object.matrix_local)
             for o in object.children:
                 if not o.name.startswith("__"):
                     childCount+=1
@@ -107,10 +116,10 @@ class NodeWriter():
 
     def writeBaseNodeData(self, nodeData):
         self.writeNodeClass("Node")
-        kn5Helper.writeString(self.file, nodeData["name"])
-        kn5Helper.writeUInt(self.file, nodeData["childCount"])
-        kn5Helper.writeBool(self.file, nodeData["active"])
-        kn5Helper.writeMatrix(self.file, nodeData["transform"])
+        writeString(self.file, nodeData["name"])
+        writeUInt(self.file, nodeData["childCount"])
+        writeBool(self.file, nodeData["active"])
+        writeMatrix(self.file, nodeData["transform"])
 
 
     def writeMeshNode(self, object):
@@ -123,7 +132,7 @@ class NodeWriter():
             nodeData["active"]=True
             transformMatrix=mathutils.Matrix()
             if object.parent is not None:
-                transformMatrix=kn5Helper.convertMatrix(object.parent.matrix_world.inverted())
+                transformMatrix=utils.convertMatrix(object.parent.matrix_world.inverted())
             nodeData["transform"]=transformMatrix
             self.writeBaseNodeData(nodeData)
         nodeProperties=NodeProperties(object)
@@ -133,37 +142,37 @@ class NodeWriter():
             self.writeMesh(object, mesh, nodeProperties)
 
     def writeNodeClass(self, nodeClass):
-        kn5Helper.writeUInt(self.file, NodeClass[nodeClass])
+        writeUInt(self.file, NodeClass[nodeClass])
 
     def writeMesh(self, object, mesh, nodeProperties):
         self.writeNodeClass("Mesh")
-        kn5Helper.writeString(self.file, object.name)
-        kn5Helper.writeUInt(self.file, 0) #Child count, none allowed
-        kn5Helper.writeBool(self.file, True) #Active
-        kn5Helper.writeBool(self.file, nodeProperties.castShadows) #castShadows
-        kn5Helper.writeBool(self.file, nodeProperties.visible) #isVisible
-        kn5Helper.writeBool(self.file, nodeProperties.transparent) #isTransparent
+        writeString(self.file, object.name)
+        writeUInt(self.file, 0) #Child count, none allowed
+        writeBool(self.file, True) #Active
+        writeBool(self.file, nodeProperties.castShadows) #castShadows
+        writeBool(self.file, nodeProperties.visible) #isVisible
+        writeBool(self.file, nodeProperties.transparent) #isTransparent
         if len(mesh.vertices)>2**16:
             raise Exception("Only %d vertices per mesh allowed. ('%s')" % (2**16, object.name))
-        kn5Helper.writeUInt(self.file, len(mesh.vertices))
+        writeUInt(self.file, len(mesh.vertices))
         for v in mesh.vertices:
-            kn5Helper.writeVector3(self.file, v.co)
-            kn5Helper.writeVector3(self.file, v.normal)
-            kn5Helper.writeVector2(self.file, v.uv)
-            kn5Helper.writeVector3(self.file, v.tangent)
-        kn5Helper.writeUInt(self.file, len(mesh.indices))
+            writeVector3(self.file, v.co)
+            writeVector3(self.file, v.normal)
+            writeVector2(self.file, v.uv)
+            writeVector3(self.file, v.tangent)
+        writeUInt(self.file, len(mesh.indices))
         for i in mesh.indices:
-            kn5Helper.writeUShort(self.file, i)
+            writeUShort(self.file, i)
         if mesh.materialId is None:
             self.warnings.append("No material to mesh '%s' assigned" % object.name)
-            kn5Helper.writeUInt(self.file, 0)
+            writeUInt(self.file, 0)
         else:
-            kn5Helper.writeUInt(self.file, mesh.materialId)
-        kn5Helper.writeUInt(self.file, nodeProperties.layer) #Layer
-        kn5Helper.writeFloat(self.file, nodeProperties.lodIn) #LOD In
-        kn5Helper.writeFloat(self.file, nodeProperties.lodOut) #LOD Out
+            writeUInt(self.file, mesh.materialId)
+        writeUInt(self.file, nodeProperties.layer) #Layer
+        writeFloat(self.file, nodeProperties.lodIn) #LOD In
+        writeFloat(self.file, nodeProperties.lodOut) #LOD Out
         self.writeBoundingSphere(mesh.vertices)
-        kn5Helper.writeBool(self.file, nodeProperties.renderable) #isRenderable
+        writeBool(self.file, nodeProperties.renderable) #isRenderable
 
     def writeBoundingSphere(self, vertices):
         maxX=-999999999
@@ -189,8 +198,8 @@ class NodeWriter():
 
         sphereCenter = [minX + (maxX-minX)/2, minY + (maxY-minY)/2, minZ + (maxZ-minZ)/2]
         sphereRadius = max((maxX-minX)/2,(maxY-minY)/2,(maxZ-minZ)/2)*2
-        kn5Helper.writeVector3(self.file, sphereCenter)
-        kn5Helper.writeFloat(self.file, sphereRadius)
+        writeVector3(self.file, sphereCenter)
+        writeFloat(self.file, sphereRadius)
 
     def splitObjectByMaterials(self, object):
         meshes=[]
@@ -219,8 +228,8 @@ class NodeWriter():
                     for vIndex in face.vertices:
                         v=meshVertices[vIndex]
                         localPosition=matrix * v.co
-                        convertedPosition = kn5Helper.convertVector3(localPosition)
-                        convertedNormal = kn5Helper.convertVector3(v.normal)
+                        convertedPosition = utils.convertVector3(localPosition)
+                        convertedNormal = utils.convertVector3(v.normal)
                         uv=(0, 0)
                         if not uvLayer is None:
                             uv=uvLayer.data[face.index].uv[vertexIndexForFace][:2]
@@ -275,7 +284,7 @@ class NodeWriter():
         x=co[0]/size[0]
         y=co[1]/size[1]
         mat=mesh.materials[materialId]
-        textureSlot=kn5Helper.getActiveMaterialTextureSlot(mat)
+        textureSlot=utils.getActiveMaterialTextureSlot(mat)
         if textureSlot is not None:
             x*=textureSlot.scale[0]
             y*=textureSlot.scale[1]

@@ -16,7 +16,11 @@
 
 import os
 import tempfile
-from . import utils
+from .exporter_utils import (
+    writeInt,
+    writeString,
+    writeBlob,
+)
 
 
 class TextureWriter():
@@ -29,15 +33,15 @@ class TextureWriter():
         self.fillAvailableImageTextures()
 
     def write(self):
-        kn5Helper.writeInt(self.file,len(self.availableTextures))
+        writeInt(self.file,len(self.availableTextures))
         for textureName, position in sorted(self.texturePositions.items(), key=lambda k: k[1]):
             self.writeTexture(self.availableTextures[textureName])
 
     def writeTexture(self, texture):
-        kn5Helper.writeInt(self.file, 1) #IsActive
-        kn5Helper.writeString(self.file, texture.name)
+        writeInt(self.file, 1) #IsActive
+        writeString(self.file, texture.name)
         imageData=self.getImageDataFromTexture(texture)
-        kn5Helper.writeBlob(self.file, imageData)
+        writeBlob(self.file, imageData)
 
     def fillAvailableImageTextures(self):
         self.availableTextures={}

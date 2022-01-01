@@ -17,7 +17,17 @@
 import numbers
 import os
 import re
-from . import utils
+from .exporter_utils import (
+    writeBool,
+    writeByte,
+    writeInt,
+    writeString,
+    writeUInt,
+    writeFloat,
+    writeVector2,
+    writeVector3,
+    writeVector4,
+)
 
 
 BlendMode = {
@@ -45,34 +55,34 @@ class MaterialsWriter():
         self.fillAvailableMaterials()
 
     def write(self):
-        kn5Helper.writeInt(self.file,len(self.availableMaterials))
+        writeInt(self.file,len(self.availableMaterials))
         for materialName, position in sorted(self.materialPositions.items(), key=lambda k: k[1]):
             material=self.availableMaterials[materialName]
             self.writeMaterial(material)
 
     def writeMaterial(self, material):
-        kn5Helper.writeString(self.file, material.name)
-        kn5Helper.writeString(self.file, material.shaderName)
-        kn5Helper.writeByte(self.file, material.alphaBlendMode)
-        kn5Helper.writeBool(self.file, material.alphaTested)
-        kn5Helper.writeInt(self.file, material.depthMode)
-        kn5Helper.writeUInt(self.file, len(material.shaderProperties))
+        writeString(self.file, material.name)
+        writeString(self.file, material.shaderName)
+        writeByte(self.file, material.alphaBlendMode)
+        writeBool(self.file, material.alphaTested)
+        writeInt(self.file, material.depthMode)
+        writeUInt(self.file, len(material.shaderProperties))
         for propertyName in material.shaderProperties:
             self.writeMaterialProperty(material.shaderProperties[propertyName])
-        kn5Helper.writeUInt(self.file, len(material.textureMapping))
+        writeUInt(self.file, len(material.textureMapping))
         textureSlot=0
         for mappingName in material.textureMapping:
-            kn5Helper.writeString(self.file, mappingName)
-            kn5Helper.writeUInt(self.file, textureSlot)
-            kn5Helper.writeString(self.file, material.textureMapping[mappingName])
+            writeString(self.file, mappingName)
+            writeUInt(self.file, textureSlot)
+            writeString(self.file, material.textureMapping[mappingName])
             textureSlot+=1
 
     def writeMaterialProperty(self, property):
-        kn5Helper.writeString(self.file, property.name)
-        kn5Helper.writeFloat(self.file, property.valueA)
-        kn5Helper.writeVector2(self.file, property.valueB)
-        kn5Helper.writeVector3(self.file, property.valueC)
-        kn5Helper.writeVector4(self.file, property.valueD)
+        writeString(self.file, property.name)
+        writeFloat(self.file, property.valueA)
+        writeVector2(self.file, property.valueB)
+        writeVector3(self.file, property.valueC)
+        writeVector4(self.file, property.valueD)
 
     def fillAvailableMaterials(self):
         self.availableMaterials={}
@@ -86,7 +96,7 @@ class MaterialsWriter():
             if material.users == 0:
                 self.warnings.append("Ignoring unused material '%s'" % material.name)
             elif not material.name.startswith("__"):
-                if kn5Helper.getActiveMaterialTextureSlot(material) is None:
+                if not getActiveMaterialTextureSlot(material):
                     self.warnings.append("No active texture for material '%s' found.%s\tUsing default UV scaling for objects without UV maps."% (material.name, os.linesep))
                 materialProperties=MaterialProperties(material)
                 for setting in self.materialSettings:
