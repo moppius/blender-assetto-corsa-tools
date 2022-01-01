@@ -34,7 +34,7 @@ from ..utils.constants import ASSETTO_CORSA_OBJECTS
 NodeClass = {
     "Node" : 1,
     "Mesh" : 2,
-    "SkinnedMesh" : 3
+    "SkinnedMesh" : 3,
 }
 
 

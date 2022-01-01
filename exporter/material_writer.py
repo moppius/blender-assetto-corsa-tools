@@ -33,13 +33,13 @@ from .exporter_utils import (
 BlendMode = {
     "Opaque" : 0,
     "AlphaBlend" : 1,
-    "AlphaToCoverage" : 2
+    "AlphaToCoverage" : 2,
 }
 
 DepthMode = {
     "DepthNormal" : 0,
     "DepthNoWrite" : 1,
-    "DepthOff" : 2
+    "DepthOff" : 2,
 }
 
 
