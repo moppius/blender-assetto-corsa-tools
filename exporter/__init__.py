@@ -20,7 +20,6 @@ from bpy_extras.io_utils import ExportHelper
 from .texture_writer import TextureWriter
 from .material_writer import MaterialsWriter
 from .node_writer import NodeWriter
-from . import utils
 from ..utils.constants import KN5_HEADER_BYTES
 
 
