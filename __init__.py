@@ -28,24 +28,6 @@ bl_info = {
 }
 
 
-if "bpy" in locals():
-    import imp
-    if "TextureWriter" in locals():
-        imp.reload(TextureWriter)
-    if "MaterialsWriter" in locals():
-        imp.reload(MaterialsWriter)
-    if "NodeWriter" in locals():
-        imp.reload(NodeWriter)
-    if "kn5Helper" in locals():
-        imp.reload(kn5Helper)
-    if "MaterialsUi" in locals():
-        imp.reload(MaterialsUi)
-    if "TexturesUi" in locals():
-        imp.reload(TexturesUi)
-    if "NodesUi" in locals():
-        imp.reload(NodesUi)
-
-
 import os
 import struct
 import sys
