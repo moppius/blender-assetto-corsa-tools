@@ -74,11 +74,10 @@ class KN5_PT_MaterialPanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        if context.material is not None:
-            return True
+        return context.material is not None
 
     def draw(self, context):
-        ac=context.material.assettoCorsa
+        ac = context.material.assettoCorsa
         self.layout.prop(ac, "shaderName")
         self.layout.prop(ac, "alphaBlendMode")
         self.layout.prop(ac, "alphaTested")
@@ -96,17 +95,17 @@ class KN5_PT_MaterialPanel(bpy.types.Panel):
                 rows=1
             )
             if ac.shaderPropertiesActive >= 0 and ac.shaderPropertiesActive < len(ac.shaderProperties):
-                activeProp=ac.shaderProperties[ac.shaderPropertiesActive]
-                row=shaderBox.row()
-                colA=row.column()
-                colA.label(ShaderPropertyItem.valueA[1]["name"])
+                activeProp = ac.shaderProperties[ac.shaderPropertiesActive]
+                row = shaderBox.row()
+                colA = row.column()
+                colA.label(text=ShaderPropertyItem.valueA[1]["name"])
                 colA.prop(activeProp,"valueA", text="")
                 colA.prop(activeProp,"valueD")
-                colB=row.column()
+                colB = row.column()
                 colB.prop(activeProp,"valueB")
                 colB.prop(activeProp,"valueC")
 
-        row=shaderBox.row()
+        row = shaderBox.row()
         row.operator("acmaterialshaderproperties.add")
         row.operator("acmaterialshaderproperties.remove")
 
@@ -118,7 +117,7 @@ class MaterialShaderPropertyAddButton(bpy.types.Operator):
     def execute(self, context):
         ac=context.material.assettoCorsa
         ac.shaderProperties.add()
-        return{'FINISHED'}
+        return {'FINISHED'}
 
 
 class MaterialShaderPropertyRemoveButton(bpy.types.Operator):
