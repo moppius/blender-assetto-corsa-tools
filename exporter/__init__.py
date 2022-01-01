@@ -52,8 +52,8 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
         except:
             error = traceback.format_exc()
             try:
-                os.remove(self.filepath) # Remove output file so that nobody has the chance
-                                         # to crash the engine with a broken file
+                # Remove output file so we can't crash the engine with a broken file
+                os.remove(self.filepath)
             except:
                 pass
             warnings.append(error)
