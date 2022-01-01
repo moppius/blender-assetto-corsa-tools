@@ -13,15 +13,18 @@
 #
 # Copyright (C) 2014  Thomas Hagnhofer
 
+
 bl_info = {
-    "name":         "Assetto Corsa (.kn5)",
-    "author":       "Thomas Hagnhofer, Paul Greveson",
-    "blender":      (3,0,0),
-    "version":      (0,2,0),
-    "location":     "File > Export",
-    "description":  "Export to the Assetto Corsa KN5 format",
-    "category":     "Import-Export",
-    "link":  "http://site.hagn.cx/"
+    "name":        "Assetto Corsa (.kn5)",
+    "version":     (0, 2, 0),
+    "author":      "Thomas Hagnhofer, Paul Greveson",
+    "blender":     (3, 0, 0),
+    "description": "Export to the Assetto Corsa KN5 format",
+    "location":    "File Export menu, Object properties, Material properties",
+    "support":     "COMMUNITY",
+    "category":    "Import-Export",
+    "doc_url":     "https://github.com/moppius/blender-assetto-corsa-tools#readme",
+    "tracker_url": "https://github.com/moppius/blender-assetto-corsa-tools/issues",
 }
 
 
