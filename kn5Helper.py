@@ -13,45 +13,46 @@
 #
 # Copyright (C) 2014  Thomas Hagnhofer
 
-import struct
-import os
+
 import json
 import mathutils
+import os
+import struct
 
 
 def writeString(file, string):
     stringBytes=string.encode('utf-8')
     writeUInt(file,len(stringBytes))
     file.write(stringBytes)
-    
+
 def writeBlob(file, blob):
     writeUInt(file,len(blob))
     file.write(blob)
-    
+
 def writeUInt(file, int):
     file.write(struct.pack("I", int))
-        
+
 def writeInt(file, int):
     file.write(struct.pack("i", int))
-    
+
 def writeUShort(file, short):
     file.write(struct.pack("H", short))
-        
+
 def writeByte(file, b):
     file.write(struct.pack("B", b))
-        
+
 def writeBool(file, bool):
     file.write(struct.pack("?", bool))
 
 def writeFloat(file, f):
     file.write(struct.pack("f", f))
-        
+
 def writeVector2(file, v):
     file.write(struct.pack("2f", *v))
-    
+
 def writeVector3(file, v):
     file.write(struct.pack("3f", *v))
-    
+
 def writeVector4(file, v):
     file.write(struct.pack("4f", *v))
 
@@ -59,7 +60,7 @@ def writeMatrix(file, m):
     for r in range(0,4):
         for c in range(0,4):
             writeFloat(file, m[c][r])
-            
+
 def convertMatrix(m):
     co, rotation, scale=m.decompose()
     co=convertVector3(co)
@@ -68,16 +69,16 @@ def convertMatrix(m):
     mat_sca = mathutils.Matrix.Scale(scale[0],4,(1,0,0))*mathutils.Matrix.Scale(scale[2],4,(0,1,0))*mathutils.Matrix.Scale(scale[1],4,(0,0,1))
     mat_rot = rotation.to_matrix().to_4x4()
     return mat_loc * mat_rot * mat_sca
-    
+
 def convertVector3(v):
     return mathutils.Vector((v[0], v[2], -v[1]))
-    
+
 def convertQuaternion(q):
     axis, angle = q.to_axis_angle()
     axis = convertVector3(axis)
     return mathutils.Quaternion(axis, angle)
-        
-        
+
+
 def readSettings(file):
     fullPath=os.path.abspath(file)
     dirName=os.path.dirname(fullPath)
@@ -85,7 +86,7 @@ def readSettings(file):
     if not os.path.exists(settingsPath):
         return {}
     return json.loads(open(settingsPath, "r").read())
-    
+
 def getActiveMaterialTextureSlot(material):
     if material is None:
         return None

@@ -14,11 +14,11 @@
 # Copyright (C) 2014  Thomas Hagnhofer
 
 
-from kn5exporter import kn5Helper
 import mathutils
 import math
 import os
 import re
+from . import kn5Helper
 
 
 NodeClass = {
@@ -43,30 +43,30 @@ class NodeWriter():
         self.scene = self.context.blend_data.scenes[0]
         self.initAcObjects()
         self.initNodeSettings()
-        
+
     def initNodeSettings(self):
         self.nodeSettings=[]
         if "nodes" in self.settings:
             for nodeKey in self.settings["nodes"]:
                 self.nodeSettings.append(NodeSettings(self.settings, nodeKey))
-        
+
     def initAcObjects(self):
         self.acObjects=[]
         for o in AcObjects:
             self.acObjects.append(re.compile("^" + o + "$"))
-            
+
     def isAcObject(self, name):
         for regex in self.acObjects:
             if regex.match(name) is not None:
                 return True
         return False
-        
+
     def write(self):
         self.writeBaseNode(None, "BlenderFile")
         for o in sorted(self.context.blend_data.objects, key=lambda k: len(k.children)):
             if o.parent is None:
                 self.writeObject(o)
-       
+
     def writeObject(self, object):
         if not object.name.startswith("__"):
             if object.type == "MESH":
@@ -77,13 +77,13 @@ class NodeWriter():
                 self.writeBaseNode(object, object.name)
             for child in object.children:
                 self.writeObject(child)
-    
+
     def anyChildIsMesh(self, object):
         for child in object.children:
             if child.type=="MESH" or self.anyChildIsMesh(child):
                 return True
         return False
-    
+
     def writeBaseNode(self, object, nodeName):
         nodeData={}
         matrix = None
@@ -100,22 +100,22 @@ class NodeWriter():
             for o in object.children:
                 if not o.name.startswith("__"):
                     childCount+=1
-        
+
         nodeData["name"]=nodeName
         nodeData["childCount"]=childCount
         nodeData["active"]=True
         nodeData["transform"]=matrix
         self.writeBaseNodeData(nodeData)
 
-        
+
     def writeBaseNodeData(self, nodeData):
         self.writeNodeClass("Node")
         kn5Helper.writeString(self.file, nodeData["name"])
         kn5Helper.writeUInt(self.file, nodeData["childCount"])
         kn5Helper.writeBool(self.file, nodeData["active"])
         kn5Helper.writeMatrix(self.file, nodeData["transform"])
-        
-        
+
+
     def writeMeshNode(self, object):
         dividedMeshes=self.splitObjectByMaterials(object)
         dividedMeshes=self.splitMeshesForVertexLimit(dividedMeshes)
@@ -134,10 +134,10 @@ class NodeWriter():
             nodeSetting.applySettingsToNode(nodeProperties)
         for mesh in dividedMeshes:
             self.writeMesh(object, mesh, nodeProperties)
-    
+
     def writeNodeClass(self, nodeClass):
         kn5Helper.writeUInt(self.file, NodeClass[nodeClass])
-        
+
     def writeMesh(self, object, mesh, nodeProperties):
         self.writeNodeClass("Mesh")
         kn5Helper.writeString(self.file, object.name)
@@ -167,8 +167,8 @@ class NodeWriter():
         kn5Helper.writeFloat(self.file, nodeProperties.lodOut) #LOD Out
         self.writeBoundingSphere(mesh.vertices)
         kn5Helper.writeBool(self.file, nodeProperties.renderable) #isRenderable
-            
-    def writeBoundingSphere(self, vertices):         
+
+    def writeBoundingSphere(self, vertices):
         maxX=-999999999
         maxY=-999999999
         maxZ=-999999999
@@ -194,7 +194,7 @@ class NodeWriter():
         sphereRadius = max((maxX-minX)/2,(maxY-minY)/2,(maxZ-minZ)/2)*2
         kn5Helper.writeVector3(self.file, sphereCenter)
         kn5Helper.writeFloat(self.file, sphereRadius)
-        
+
     def splitObjectByMaterials(self, object):
         meshes=[]
         meshCopy = object.to_mesh(self.scene, True, "RENDER", True, False)
@@ -268,24 +268,24 @@ class NodeWriter():
                             break
                     vertices=[mesh.vertices[v] for v, index in sorted(vertexIndexMapping.items(), key=lambda k: k[1])]
                     newMeshes.append(Mesh(mesh.materialId, vertices, newIndices))
-                    
+
             else:
                 newMeshes.append(mesh)
         return newMeshes
-    
+
     def calculateUvs(self, object, mesh, materialId, co):
         size=object.dimensions
         x=co[0]/size[0]
         y=co[1]/size[1]
         mat=mesh.materials[materialId]
-        textureSlot=kn5Helper.getActiveMaterialTextureSlot(mat)              
+        textureSlot=kn5Helper.getActiveMaterialTextureSlot(mat)
         if textureSlot is not None:
             x*=textureSlot.scale[0]
             y*=textureSlot.scale[1]
             x+=textureSlot.offset[0]
             y+=textureSlot.offset[1]
         return (x, y)
-        
+
 class NodeProperties:
     def __init__(self, node):
         ac=node.assettoCorsa
@@ -297,13 +297,13 @@ class NodeProperties:
         self.visible = ac.visible
         self.transparent = ac.transparent
         self.renderable = ac.renderable
-    
+
 class NodeSettings:
     def __init__(self, settings, nodeSettingsKey):
         self.settings = settings
         self.nodeSettingsKey=nodeSettingsKey
         self.nodeNameMatches=self.convertToMatchesList(nodeSettingsKey)
-    
+
     def applySettingsToNode(self, node):
         if not self.doesNodeNameMatch(node.name):
             return
@@ -328,26 +328,26 @@ class NodeSettings:
         renderable = self.getNodeIsRenderable()
         if renderable is not None:
             node.renderable = renderable
-    
+
     def doesNodeNameMatch(self, nodeName):
         for regex in self.nodeNameMatches:
             if regex.match(nodeName) is not None:
                 return True
         return False
-        
+
     def convertToMatchesList(self, key):
         matches=[]
         for subkey in key.split("|"):
             matches.append(re.compile("^" + self.escapeMatchKey(subkey) + "$", re.IGNORECASE))
         return matches
-    
+
     def escapeMatchKey(self, key):
         wildcardReplacement="__WILDCARD__"
         key=key.replace("*",wildcardReplacement)
         key=re.escape(key)
         key=key.replace(wildcardReplacement, ".*")
         return key
-    
+
     def getNodeLodIn(self):
         if "lodIn" in self.settings["nodes"][self.nodeSettingsKey]:
             return self.settings["nodes"][self.nodeSettingsKey]["lodIn"]
@@ -357,7 +357,7 @@ class NodeSettings:
         if "lodOut" in self.settings["nodes"][self.nodeSettingsKey]:
             return self.settings["nodes"][self.nodeSettingsKey]["lodOut"]
         return None
-    
+
     def getNodeLayer(self):
         if "layer" in self.settings["nodes"][self.nodeSettingsKey]:
             return self.settings["nodes"][self.nodeSettingsKey]["layer"]
@@ -367,12 +367,12 @@ class NodeSettings:
         if "castShadows" in self.settings["nodes"][self.nodeSettingsKey]:
             return self.settings["nodes"][self.nodeSettingsKey]["castShadows"]
         return None
-    
+
     def getNodeIsVisible(self):
         if "isVisible" in self.settings["nodes"][self.nodeSettingsKey]:
             return self.settings["nodes"][self.nodeSettingsKey]["isVisible"]
         return None
-    
+
     def getNodeIsTransparent(self):
         if "isTransparent" in self.settings["nodes"][self.nodeSettingsKey]:
             return self.settings["nodes"][self.nodeSettingsKey]["isTransparent"]
@@ -383,7 +383,7 @@ class NodeSettings:
             return self.settings["nodes"][self.nodeSettingsKey]["isRenderable"]
         return None
 
-        
+
 class UvVertex:
     def __init__(self, co, normal, uv, tangent):
         self.co=co
@@ -391,7 +391,7 @@ class UvVertex:
         self.uv=uv
         self.tangent=tangent
         self.hash=None
-        
+
     def __hash__(self):
         if self.hash is None:
             self.hash=hash(hash(self.co[0]) ^
@@ -399,14 +399,14 @@ class UvVertex:
                       hash(self.co[2]) ^
                       hash(self.normal[0]) ^
                       hash(self.normal[1]) ^
-                      hash(self.normal[2]) ^ 
+                      hash(self.normal[2]) ^
                       hash(self.uv[0]) ^
                       hash(self.uv[1]) ^
                       hash(self.tangent[0]) ^
                       hash(self.tangent[1]) ^
                       hash(self.tangent[2]))
         return self.hash
-    
+
     def __eq__(self, other):
         if self.co[0] != other.co[0] or self.co[1] != other.co[1] or self.co[2] != other.co[2]:
             return False
@@ -417,7 +417,7 @@ class UvVertex:
         if self.tangent[0] != other.tangent[0] or self.tangent[1] != other.tangent[1] or self.tangent[2] != other.tangent[2]:
             return False
         return True
-    
+
 class Mesh:
     def __init__(self, materialId, vertices, indices):
         self.materialId=materialId

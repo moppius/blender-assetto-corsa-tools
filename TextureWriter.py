@@ -13,9 +13,12 @@
 #
 # Copyright (C) 2014  Thomas Hagnhofer
 
-from kn5exporter import kn5Helper
-import tempfile
+
 import os
+import tempfile
+from . import kn5Helper
+
+
 class TextureWriter():
     def __init__(self, file, context, warnings):
         self.availableTextures={}
@@ -24,19 +27,19 @@ class TextureWriter():
         self.warnings = warnings
         self.context = context
         self.fillAvailableImageTextures()
-        
+
     def write(self):
         kn5Helper.writeInt(self.file,len(self.availableTextures))
         for textureName, position in sorted(self.texturePositions.items(), key=lambda k: k[1]):
             self.writeTexture(self.availableTextures[textureName])
-        
+
     def writeTexture(self, texture):
         kn5Helper.writeInt(self.file, 1) #IsActive
         kn5Helper.writeString(self.file, texture.name)
         imageData=self.getImageDataFromTexture(texture)
         kn5Helper.writeBlob(self.file, imageData)
-        
-    
+
+
     def fillAvailableImageTextures(self):
         self.availableTextures={}
         self.texturePositions={}
@@ -63,11 +66,11 @@ class TextureWriter():
                 imageData = imageCopy.packed_file.data
                 magicBytes = imageData[:3]
                 if imageCopy.file_format != "" or magicBytes == b"DDS":
-                    return imageData                    
+                    return imageData
             return self.convertImageToPng(imageCopy)
         finally:
             self.context.blend_data.images.remove(imageCopy)
-            
+
     def convertImageToPng(self, image):
         if image.packed_file is not None:
             image.unpack("WRITE_LOCAL")

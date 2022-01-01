@@ -13,10 +13,10 @@
 #
 # Copyright (C) 2014  Thomas Hagnhofer
 
-from kn5exporter import kn5Helper
 import numbers
 import os
 import re
+from . import kn5Helper
 
 BlendMode = {
     "Opaque" : 0,
@@ -41,13 +41,13 @@ class MaterialsWriter():
         self.settings = settings
         self.warnings = warnings
         self.fillAvailableMaterials()
-        
+
     def write(self):
         kn5Helper.writeInt(self.file,len(self.availableMaterials))
         for materialName, position in sorted(self.materialPositions.items(), key=lambda k: k[1]):
             material=self.availableMaterials[materialName]
             self.writeMaterial(material)
-        
+
     def writeMaterial(self, material):
         kn5Helper.writeString(self.file, material.name)
         kn5Helper.writeString(self.file, material.shaderName)
@@ -64,14 +64,14 @@ class MaterialsWriter():
             kn5Helper.writeUInt(self.file, textureSlot)
             kn5Helper.writeString(self.file, material.textureMapping[mappingName])
             textureSlot+=1
-            
+
     def writeMaterialProperty(self, property):
         kn5Helper.writeString(self.file, property.name)
         kn5Helper.writeFloat(self.file, property.valueA)
         kn5Helper.writeVector2(self.file, property.valueB)
         kn5Helper.writeVector3(self.file, property.valueC)
         kn5Helper.writeVector4(self.file, property.valueD)
-            
+
     def fillAvailableMaterials(self):
         self.availableMaterials={}
         self.materialPositions={}
@@ -92,7 +92,7 @@ class MaterialsWriter():
                 self.availableMaterials[material.name] = materialProperties
                 self.materialPositions[material.name] = position
                 position+=1
-                
+
 class ShaderProperty:
     def __init__(self, name):
         self.name=name
@@ -105,7 +105,7 @@ class ShaderProperty:
         self.valueB=property.valueB
         self.valueC=property.valueC
         self.valueD=property.valueD
-                
+
 class MaterialProperties:
     def __init__(self, material):
         self.name=material.name
@@ -116,7 +116,7 @@ class MaterialProperties:
         self.depthMode = int(ac.depthMode)
         self.shaderProperties=self.copyShaderProperties(material)
         self.textureMapping=self.generateTextureMapping(material)
-    
+
     def copyShaderProperties(self, material):
         ac=material.assettoCorsa
         properties={}
@@ -133,10 +133,10 @@ class MaterialProperties:
             newProperty.valueA=0.4
             properties[newProperty.name]=newProperty
         return properties
-    
+
     def generateTextureMapping(self, material):
         mapping={}
-        for textureIndex in range(0, len(material.texture_slots)):                
+        for textureIndex in range(0, len(material.texture_slots)):
             if material.texture_slots[textureIndex] is not None and material.texture_slots[textureIndex].use:
                 textureSlot=material.texture_slots[textureIndex]
                 texture=textureSlot.texture
@@ -151,7 +151,7 @@ class MaterialSettings:
         self.warnings = warnings
         self.materialSettingsKey=materialSettingsKey
         self.materialNameMatches=self.convertToMatchesList(materialSettingsKey)
-    
+
     def applySettingsToMaterial(self, material):
         if not self.doesMaterialNameMatch(material.name):
             return
@@ -198,66 +198,66 @@ class MaterialSettings:
                 self.warnings.append("Ignoring texture mapping '%s' for material '%s' without texture name" % (textureName, material.name))
             else:
                 material.textureMapping[textureMappingName]=textureName
-    
+
     def doesMaterialNameMatch(self, materialName):
         for regex in self.materialNameMatches:
             if regex.match(materialName) is not None:
                 return True
         return False
-        
+
     def convertToMatchesList(self, key):
         matches=[]
         for subkey in key.split("|"):
             matches.append(re.compile("^" + self.escapeMatchKey(subkey) + "$", re.IGNORECASE))
         return matches
-    
+
     def escapeMatchKey(self, key):
         wildcardReplacement="__WILDCARD__"
         key=key.replace("*",wildcardReplacement)
         key=re.escape(key)
         key=key.replace(wildcardReplacement, ".*")
         return key
-    
+
     def getMaterialShader(self):
         if "shaderName" in self.settings["materials"][self.materialSettingsKey]:
             return self.settings["materials"][self.materialSettingsKey]["shaderName"]
         return None
-    
+
     def getMaterialBlendMode(self):
         if "alphaBlendMode" in self.settings["materials"][self.materialSettingsKey]:
             return BlendMode[self.settings["materials"][self.materialSettingsKey]["alphaBlendMode"]]
         return None
-    
+
     def getMaterialDepthMode(self):
         if "depthMode" in self.settings["materials"][self.materialSettingsKey]:
             return DepthMode[self.settings["materials"][self.materialSettingsKey]["depthMode"]]
         return None
-    
+
     def getMaterialAlphaTested(self):
         if "alphaTested" in self.settings["materials"][self.materialSettingsKey]:
             return self.settings["materials"][self.materialSettingsKey]["alphaTested"]
         return None
-    
+
     def getMaterialPropertyNames(self):
         if "properties" in self.settings["materials"][self.materialSettingsKey]:
             return self.settings["materials"][self.materialSettingsKey]["properties"]
         return []
-    
+
     def getMaterialPropertyValue(self, propertyName, valueName):
         if valueName in self.settings["materials"][self.materialSettingsKey]["properties"][propertyName]:
             return self.settings["materials"][self.materialSettingsKey]["properties"][propertyName][valueName]
         return None
-    
+
     def getMaterialTextureMappingNames(self):
         if "textures" in self.settings["materials"][self.materialSettingsKey]:
             return self.settings["materials"][self.materialSettingsKey]["textures"]
         return []
-    
+
     def getMaterialTextureMappingTextureName(self, mappingName):
         if "textures" in self.settings["materials"][self.materialSettingsKey]:
             return self.settings["materials"][self.materialSettingsKey]["textures"][mappingName]["textureName"]
         return None
-    
+
     def getMaterialPropertyValueA(self, propertyName):
         valueA = self.getMaterialPropertyValue(propertyName, "valueA")
         if valueA is None:
@@ -265,7 +265,7 @@ class MaterialSettings:
         if not isinstance(valueA, numbers.Number):
             raise Exception("valueA must be a float")
         return valueA
-    
+
     def getMaterialPropertyValueB(self, propertyName):
         valueB = self.getMaterialPropertyValue(propertyName, "valueB")
         if valueB is None:
@@ -273,7 +273,7 @@ class MaterialSettings:
         if not self.isListOfNumbersValid(valueB, 2):
             raise Exception("valueB must be a list of two floats")
         return valueB
-    
+
     def getMaterialPropertyValueC(self, propertyName):
         valueC = self.getMaterialPropertyValue(propertyName, "valueC")
         if valueC is None:
@@ -281,7 +281,7 @@ class MaterialSettings:
         if not self.isListOfNumbersValid(valueC, 3):
             raise Exception("valueC must be a list of three floats")
         return valueC
-    
+
     def getMaterialPropertyValueD(self, propertyName):
         valueD = self.getMaterialPropertyValue(propertyName, "valueD")
         if valueD is None:
@@ -289,7 +289,7 @@ class MaterialSettings:
         if not self.isListOfNumbersValid(valueD, 4):
             raise Exception("valueD must be a list of four floats")
         return valueD
-        
+
     def isListOfNumbersValid(self, list, count):
         if not (not hasattr(list, "strip") and (hasattr(list, "__getitem__") or hasattr(list, "__iter__"))):
             return False

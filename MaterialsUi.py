@@ -13,9 +13,10 @@
 #
 # Copyright (C) 2014  Thomas Hagnhofer
 
+
 import bpy
-from kn5exporter import MaterialsWriter
 from bpy.props import *
+from . import MaterialsWriter
 
 
 def convertDictionaryToBlenderEnumItems(dict):

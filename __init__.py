@@ -24,6 +24,7 @@ bl_info = {
     "link":  "http://site.hagn.cx/"
 }
 
+
 if "bpy" in locals():
     import imp
     if "TextureWriter" in locals():
@@ -41,13 +42,15 @@ if "bpy" in locals():
     if "NodesUi" in locals():
         imp.reload(NodesUi)
 
-import sys
+
 import os
-import traceback
 import struct
+import sys
+import traceback
 import bpy
 from bpy.props import *
-from kn5exporter import (
+from bpy_extras.io_utils import ExportHelper
+from . import (
     kn5Helper,
     TextureWriter,
     MaterialsWriter,
@@ -56,8 +59,6 @@ from kn5exporter import (
     TexturesUi,
     NodesUi,
 )
-
-from bpy_extras.io_utils import ExportHelper
 
 
 class ReportOperator(bpy.types.Operator):
