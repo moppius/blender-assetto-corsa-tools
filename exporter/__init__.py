@@ -14,13 +14,66 @@
 # Copyright (C) 2014  Thomas Hagnhofer
 
 
+import traceback
 import os
 import bpy
+from bpy.props import BoolProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper
+from . import utils
 from .texture_writer import TextureWriter
 from .material_writer import MaterialsWriter
 from .node_writer import NodeWriter
+from ..utils import readSettings
 from ..utils.constants import KN5_HEADER_BYTES
+
+
+class ReportOperator(bpy.types.Operator):
+    bl_idname = "kn5.report_message"
+    bl_label = "Export report"
+
+    is_error: BoolProperty()
+    title: StringProperty()
+    message: StringProperty()
+
+    def execute(self, context):
+        if self.is_error:
+            self.report({'WARNING'}, self.message)
+        else:
+            self.report({'INFO'}, self.message)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        self.execute(context)
+        wm = context.window_manager
+        return wm.invoke_popup(self, width=600)
+
+    def draw(self, context):
+        if self.is_error:
+            self.layout.alert = True
+        row = self.layout.row()
+        row.alignment="CENTER"
+        row.label(text=self.title)
+        for line in self.message.splitlines():
+            row=self.layout.row()
+            line=line.replace("\t"," "*4)
+            row.label(text=line)
+        row = self.layout.row()
+        row.operator("kn5.report_clipboard").content=self.message
+
+
+class CopyClipboardButtonOperator(bpy.types.Operator):
+    bl_idname = "kn5.report_clipboard"
+    bl_label = "Copy to clipboard"
+
+    content: StringProperty()
+
+    def execute(self, context):
+        context.window_manager.clipboard = self.content
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        self.execute(context)
+        return {'FINISHED'}
 
 
 class ExportKN5(bpy.types.Operator, ExportHelper):
@@ -36,7 +89,7 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
         try:
             output_file = open(self.filepath,"wb")
             try:
-                settings = kn5Helper.readSettings(self.filepath)
+                settings = readSettings(self.filepath)
                 self._write_header(output_file)
                 self._write_content(output_file, context, settings, warnings)
                 bpy.ops.kn5.report_message(
@@ -66,7 +119,7 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
 
     def _write_header(self, output_file):
         output_file.write(KN5_HEADER_BYTES)
-        kn5Helper.writeUInt(output_file, self.fileVersion)
+        utils.writeUInt(output_file, self.fileVersion)
 
     def _write_content(self, output_file, context, settings, warnings):
         texture_writer = TextureWriter(output_file, context, warnings)
@@ -82,6 +135,8 @@ def menu_func(self, context):
 
 
 REGISTER_CLASSES = (
+    ReportOperator,
+    CopyClipboardButtonOperator,
     ExportKN5,
 )
 

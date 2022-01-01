@@ -16,62 +16,9 @@
 
 import json
 import os
-import struct
-import sys
-import traceback
 import bpy
 from inspect import isclass
-from bpy.props import BoolProperty, StringProperty
 from mathutils import Matrix, Vector, Quaternion
-
-
-class ReportOperator(bpy.types.Operator):
-    bl_idname = "kn5.report_message"
-    bl_label = "Export report"
-
-    is_error: BoolProperty()
-    title: StringProperty()
-    message: StringProperty()
-
-    def execute(self, context):
-        if self.is_error:
-            self.report({'WARNING'}, self.message)
-        else:
-            self.report({'INFO'}, self.message)
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        self.execute(context)
-        wm = context.window_manager
-        return wm.invoke_popup(self, width=600)
-
-    def draw(self, context):
-        if self.is_error:
-            self.layout.alert = True
-        row = self.layout.row()
-        row.alignment="CENTER"
-        row.label(text=self.title)
-        for line in self.message.splitlines():
-            row=self.layout.row()
-            line=line.replace("\t"," "*4)
-            row.label(text=line)
-        row = self.layout.row()
-        row.operator("kn5.report_clipboard").content=self.message
-
-
-class CopyClipboardButtonOperator(bpy.types.Operator):
-    bl_idname = "kn5.report_clipboard"
-    bl_label = "Copy to clipboard"
-
-    content: StringProperty()
-
-    def execute(self, context):
-        context.window_manager.clipboard = self.content
-        return {'FINISHED'}
-
-    def invoke(self, context, event):
-        self.execute(context)
-        return {'FINISHED'}
 
 
 def convertMatrix(m):
