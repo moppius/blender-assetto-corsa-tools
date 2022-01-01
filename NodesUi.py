@@ -51,7 +51,7 @@ class NodeProperties(bpy.types.PropertyGroup):
         description="Toggles if the object should be rendered or not")
 
 
-class NodePanel(bpy.types.Panel):
+class KN5_PT_NodePanel(bpy.types.Panel):
     bl_label = "Assetto Corsa"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -75,7 +75,7 @@ class NodePanel(bpy.types.Panel):
 
 classes = (
     NodeProperties,
-    NodePanel,
+    KN5_PT_NodePanel,
 )
 
 

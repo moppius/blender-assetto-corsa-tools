@@ -57,7 +57,7 @@ class MaterialProperties(bpy.types.PropertyGroup):
         default=-1)
 
 
-class ShaderPropertiesList(bpy.types.UIList):
+class KN5_UL_ShaderPropertiesList(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             layout.prop(item,"name", text="", emboss=False)
@@ -66,7 +66,7 @@ class ShaderPropertiesList(bpy.types.UIList):
             layout.prop(item,"name", text="", emboss=False)
 
 
-class MaterialPanel(bpy.types.Panel):
+class KN5_PT_MaterialPanel(bpy.types.Panel):
     bl_label = "Assetto Corsa"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -84,15 +84,17 @@ class MaterialPanel(bpy.types.Panel):
         self.layout.prop(ac, "alphaTested")
         self.layout.prop(ac, "depthMode")
         shaderBox=self.layout.box()
-        shaderBox.label("Shader Properties")
-        if len(ac.shaderProperties) > 0:
-            shaderBox.template_list("ShaderPropertiesList",
-                        "",
-                        ac,
-                        "shaderProperties",
-                        ac,
-                         "shaderPropertiesActive",
-                         rows=1)
+        shaderBox.label(text="Shader Properties")
+        if ac.shaderProperties:
+            shaderBox.template_list(
+                "KN5_UL_ShaderPropertiesList",
+                "",
+                ac,
+                "shaderProperties",
+                ac,
+                "shaderPropertiesActive",
+                rows=1
+            )
             if ac.shaderPropertiesActive >= 0 and ac.shaderPropertiesActive < len(ac.shaderProperties):
                 activeProp=ac.shaderProperties[ac.shaderPropertiesActive]
                 row=shaderBox.row()
@@ -132,8 +134,8 @@ class MaterialShaderPropertyRemoveButton(bpy.types.Operator):
 classes = (
     ShaderPropertyItem,
     MaterialProperties,
-    ShaderPropertiesList,
-    MaterialPanel,
+    KN5_UL_ShaderPropertiesList,
+    KN5_PT_MaterialPanel,
     MaterialShaderPropertyAddButton,
     MaterialShaderPropertyRemoveButton,
 )

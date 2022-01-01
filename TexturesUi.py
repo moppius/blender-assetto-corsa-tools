@@ -25,7 +25,7 @@ class TextureProperties(bpy.types.PropertyGroup):
         description ="Name of the shader input slot the texture should be assigned to")
 
 
-class TexturePanel(bpy.types.Panel):
+class KN5_PT_TexturePanel(bpy.types.Panel):
     bl_label = "Assetto Corsa"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -43,7 +43,7 @@ class TexturePanel(bpy.types.Panel):
 
 classes = (
     TextureProperties,
-    TexturePanel,
+    KN5_PT_TexturePanel,
 )
 
 def register():
