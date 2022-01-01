@@ -59,7 +59,7 @@ class KN5_PT_NodePanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.type == "MESH"
+        return context.object and context.object.type in ["MESH", "CURVE"]
 
     def draw(self, context):
         ac = context.object.assettoCorsa
