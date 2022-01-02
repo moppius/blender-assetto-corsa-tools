@@ -19,11 +19,11 @@ import os
 import bpy
 from bpy.props import BoolProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper
+from .exporter_utils import read_settings
 from .kn5_writer import KN5Writer
 from .texture_writer import TextureWriter
 from .material_writer import MaterialWriter
 from .node_writer import NodeWriter
-from ..utils import readSettings
 from ..utils.constants import KN5_HEADER_BYTES
 
 
@@ -115,7 +115,7 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
         try:
             output_file = open(self.filepath,"wb")
             try:
-                settings = readSettings(self.filepath)
+                settings = read_settings(self.filepath)
                 kn5_writer = KN5FileWriter(output_file, context, settings, warnings)
                 kn5_writer.write()
                 bpy.ops.kn5.report_message(

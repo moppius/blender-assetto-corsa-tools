@@ -69,7 +69,7 @@ def get_active_material_texture_slot(material):
     return None
 
 
-def readSettings(file):
+def read_settings(file):
     fullPath=os.path.abspath(file)
     dirName=os.path.dirname(fullPath)
     settingsPath=os.path.join(dirName, "settings.json")

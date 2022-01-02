@@ -21,15 +21,6 @@ from inspect import isclass
 from mathutils import Matrix, Vector, Quaternion
 
 
-def readSettings(file):
-    fullPath=os.path.abspath(file)
-    dirName=os.path.dirname(fullPath)
-    settingsPath=os.path.join(dirName, "settings.json")
-    if not os.path.exists(settingsPath):
-        return {}
-    return json.loads(open(settingsPath, "r").read())
-
-
 def register_recursive(objects):
     """Registers classes with Blender recursively from modules."""
     for obj in objects:
