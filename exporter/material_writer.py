@@ -130,7 +130,7 @@ class MaterialProperties:
         self.alphaTested = ac.alphaTested
         self.depthMode = int(ac.depthMode)
         self.shaderProperties = self.copy_shader_properties(material)
-        self.texture_mapping = self.generate_texture_mapping(material)
+        self.texture_mapping = self._generate_texture_mapping(material)
 
     def copy_shader_properties(self, material):
         ac = material.assettoCorsa
@@ -149,7 +149,7 @@ class MaterialProperties:
             properties[new_property.name] = new_property
         return properties
 
-    def generate_texture_mapping(self, material):
+    def _generate_texture_mapping(self, material):
         mapping = {}
         texture_nodes = get_texture_nodes(material)
         for texture_node in texture_nodes:
