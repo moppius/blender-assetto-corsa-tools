@@ -295,12 +295,12 @@ class NodeWriter():
         x = co[0] / size[0]
         y = co[1] / size[1]
         mat = mesh.materials[material_id]
-        textureSlot = get_active_material_texture_slot(mat)
-        if textureSlot:
-            x *= textureSlot.scale[0]
-            y *= textureSlot.scale[1]
-            x += textureSlot.offset[0]
-            y += textureSlot.offset[1]
+        texture_node = get_active_material_texture_slot(mat)
+        if texture_node:
+            x *= texture_node.texture_mapping.scale[0]
+            y *= texture_node.texture_mapping.scale[1]
+            x += texture_node.texture_mapping.translation[0]
+            y += texture_node.texture_mapping.translation[1]
         return (x, y)
 
 

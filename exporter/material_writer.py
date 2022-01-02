@@ -19,6 +19,7 @@ import os
 import re
 from .exporter_utils import (
     get_active_material_texture_slot,
+    get_texture_nodes,
     writeBool,
     writeByte,
     writeInt,
@@ -156,19 +157,11 @@ class MaterialProperties:
 
     def generate_texture_mapping(self, material):
         mapping = {}
-        textures = []
-        if material.node_tree:
-            textures.extend([x for x in material.node_tree.nodes if x.type=='TEX_IMAGE'])
-        if not textures:
-            print("GOT NO TEXTURES")
-        else:
-            print(f"GOT TEXTURES: {textures}")
-        for texture in textures:
-            texture_slot = material.texture_slots[textureIndex]
-            texture = texture_slot.texture
-            if not texture.name.startswith("__"):
-                shaderInput = texture.assettoCorsa.shaderInputName
-                mapping[shaderInput] = texture.name
+        texture_nodes = get_texture_nodes(material)
+        for texture_node in texture_nodes:
+            if not texture_node.name.startswith("__"):
+                shaderInput = texture_node.assettoCorsa.shaderInputName
+                mapping[shaderInput] = texture_node.name
         return mapping
 
 
