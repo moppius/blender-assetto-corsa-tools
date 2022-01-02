@@ -83,7 +83,7 @@ def convertQuaternion(q):
 def get_active_material_texture_slot(material):
     if material and material.node_tree:
         for node in material.node_tree.nodes:
-            if isinstance(node, classbpy.types.TextureNodeImage):
+            if isinstance(node, bpy.types.TextureNodeImage):
                 return node
     # FIXME: Remove this
     #for textureIndex in range(0, len(material.texture_slots)):
