@@ -33,8 +33,8 @@ class TextureWriter(KN5Writer):
 
     def write(self):
         self.write_int(len(self.available_textures))
-        for textureName, position in sorted(self.texture_positions.items(), key=lambda k: k[1]):
-            self._write_texture(self.available_textures[textureName])
+        for texture_name, _position in sorted(self.texture_positions.items(), key=lambda k: k[1]):
+            self._write_texture(self.available_textures[texture_name])
 
     def _write_texture(self, texture):
         is_active = 1
@@ -53,7 +53,7 @@ class TextureWriter(KN5Writer):
             if not texture_node.name.startswith("__"):
                 if not texture_node.image:
                     self.warnings.append(f"Ignoring texture node without image '{texture_node.name}'")
-                elif len(texture_node.image.pixels) == 0:
+                elif not texture_node.image.pixels:
                     self.warnings.append(f"Ignoring texture node without image data '{texture_node.name}'")
                 else:
                     self.available_textures[texture_node.image.name] = texture_node
