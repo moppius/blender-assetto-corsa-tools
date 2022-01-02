@@ -15,30 +15,33 @@
 
 
 import json
-import mathutils
 import os
 import struct
 import bpy
+from mathutils import Matrix, Quaternion, Vector
 
 
 def convert_matrix(m):
-    co, rotation, scale=m.decompose()
-    co=convertVector3(co)
-    rotation=convertQuaternion(rotation)
-    mat_loc = mathutils.Matrix.Translation(co)
-    mat_sca = mathutils.Matrix.Scale(scale[0], 4, (1,0,0)) * mathutils.Matrix.Scale(scale[2],4,(0,1,0)) * mathutils.Matrix.Scale(scale[1],4,(0,0,1))
+    co, rotation, scale = m.decompose()
+    co = convert_vector3(co)
+    rotation = convert_quaternion(rotation)
+    mat_loc = Matrix.Translation(co)
+    mat_scale_1 = Matrix.Scale(scale[0], 4, (1,0,0))
+    mat_scale_2 = Matrix.Scale(scale[2], 4, (0,1,0))
+    mat_scale_3 = Matrix.Scale(scale[1], 4, (0,0,1))
+    mat_scale = mat_scale_1 @ mat_scale_2 @ mat_scale_3
     mat_rot = rotation.to_matrix().to_4x4()
-    return mat_loc * mat_rot * mat_sca
+    return mat_loc @ mat_rot @ mat_scale
 
 
-def convertVector3(v):
-    return mathutils.Vector((v[0], v[2], -v[1]))
+def convert_vector3(v):
+    return Vector((v[0], v[2], -v[1]))
 
 
-def convertQuaternion(q):
+def convert_quaternion(q):
     axis, angle = q.to_axis_angle()
-    axis = convertVector3(axis)
-    return mathutils.Quaternion(axis, angle)
+    axis = convert_vector3(axis)
+    return Quaternion(axis, angle)
 
 
 def get_texture_nodes(material):

@@ -14,13 +14,13 @@
 # Copyright (C) 2014  Thomas Hagnhofer
 
 
-import mathutils
 import math
 import os
 import re
+from mathutils import Matrix
 from .exporter_utils import (
     convert_matrix,
-    convertVector3,
+    convert_vector3,
     get_active_material_texture_slot,
 )
 from .kn5_writer import KN5Writer
@@ -47,92 +47,92 @@ class NodeWriter(KN5Writer):
         self.warnings = warnings
         self.material_writer = material_writer
         self.scene = self.context.blend_data.scenes[0]
-        self.initAcObjects()
-        self.initNodeSettings()
+        self._init_assetto_corsa_objects()
+        self._init_node_settings()
 
-    def initNodeSettings(self):
+    def _init_node_settings(self):
         self.nodeSettings = []
         if NODES in self.settings:
             for nodeKey in self.settings[NODES]:
                 self.nodeSettings.append(NodeSettings(self.settings, nodeKey))
 
-    def initAcObjects(self):
+    def _init_assetto_corsa_objects(self):
         self.acObjects=[]
         for o in ASSETTO_CORSA_OBJECTS:
             self.acObjects.append(re.compile(f"^{o}$"))
 
-    def is_ac_object(self, name):
+    def _is_ac_object(self, name):
         for regex in self.acObjects:
             if regex.match(name):
                 return True
         return False
 
     def write(self):
-        self.writeBaseNode(None, "BlenderFile")
+        self._write_base_node(None, "BlenderFile")
         for o in sorted(self.context.blend_data.objects, key=lambda k: len(k.children)):
             if not o.parent:
-                self.writeObject(o)
+                self._write_object(o)
 
-    def writeObject(self, obj):
+    def _write_object(self, obj):
         if not obj.name.startswith("__"):
             if obj.type == "MESH":
                 if len(obj.children) != 0:
                     raise Exception(f"A mesh cannot contain children ('{obj.name}')")
-                self.writeMeshNode(obj)
+                self.write_mesh_node(obj)
             else:
-                self.writeBaseNode(obj, obj.name)
+                self._write_base_node(obj, obj.name)
             for child in obj.children:
-                self.writeObject(child)
+                self._write_object(child)
 
-    def any_child_is_mesh(self, obj):
+    def _any_child_is_mesh(self, obj):
         for child in obj.children:
-            if child.type in ["MESH", "CURVE"] or self.any_child_is_mesh(child):
+            if child.type in ["MESH", "CURVE"] or self._any_child_is_mesh(child):
                 return True
         return False
 
-    def writeBaseNode(self, obj, nodeName):
-        nodeData={}
+    def _write_base_node(self, obj, node_name):
+        node_data = {}
         matrix = None
-        childCount = 0
+        num_children = 0
         if not obj:
-            matrix = mathutils.Matrix()
+            matrix = Matrix()
             for o in self.context.blend_data.objects:
                 if not o.parent and not o.name.startswith("__"):
-                    childCount += 1
+                    num_children += 1
         else:
-            if not self.is_ac_object(obj.name) and not self.any_child_is_mesh(obj):
+            if not self._is_ac_object(obj.name) and not self._any_child_is_mesh(obj):
                 self.warnings.append(f"Unknown logical object '{obj.name}' might prevent other objects from loading.{os.linesep}\tRename it to '__{obj.name}' if you do not want to export it.")
             matrix = convert_matrix(obj.matrix_local)
             for child in obj.children:
                 if not child.name.startswith("__"):
-                    childCount += 1
+                    num_children += 1
 
-        nodeData["name"] = nodeName
-        nodeData["childCount"] = childCount
-        nodeData["active"] = True
-        nodeData["transform"] = matrix
-        self.writeBaseNodeData(nodeData)
+        node_data["name"] = node_name
+        node_data["childCount"] = num_children
+        node_data["active"] = True
+        node_data["transform"] = matrix
+        self._write_base_node_data(node_data)
 
-    def writeBaseNodeData(self, nodeData):
+    def _write_base_node_data(self, node_data):
         self.write_node_class("Node")
-        self.write_string(nodeData["name"])
-        self.write_uint(nodeData["childCount"])
-        self.write_bool(nodeData["active"])
-        self.write_matrix(nodeData["transform"])
+        self.write_string(node_data["name"])
+        self.write_uint(node_data["childCount"])
+        self.write_bool(node_data["active"])
+        self.write_matrix(node_data["transform"])
 
-    def writeMeshNode(self, obj):
+    def write_mesh_node(self, obj):
         divided_meshes = self._split_object_by_materials(obj)
         divided_meshes = self._split_meshes_for_vertex_limit(divided_meshes)
         if obj.parent or len(divided_meshes) > 1:
-            nodeData = {}
-            nodeData["name"] = obj.name
-            nodeData["childCount"] = len(divided_meshes)
-            nodeData["active"] = True
-            transformMatrix = mathutils.Matrix()
+            node_data = {}
+            node_data["name"] = obj.name
+            node_data["childCount"] = len(divided_meshes)
+            node_data["active"] = True
+            transformMatrix = Matrix()
             if obj.parent:
                 transformMatrix = convert_matrix(obj.parent.matrix_world.inverted())
-            nodeData["transform"] = transformMatrix
-            self.writeBaseNodeData(nodeData)
+            node_data["transform"] = transformMatrix
+            self._write_base_node_data(node_data)
         nodeProperties = NodeProperties(obj)
         for nodeSetting in self.nodeSettings:
             nodeSetting.apply_settings_to_node(nodeProperties)
@@ -235,8 +235,8 @@ class NodeWriter(KN5Writer):
                     for v_index in face.vertices:
                         v = mesh_vertices[v_index]
                         local_position = matrix @ v.co
-                        convertedPosition = convertVector3(local_position)
-                        convertedNormal = convertVector3(v.normal)
+                        convertedPosition = convert_vector3(local_position)
+                        convertedNormal = convert_vector3(v.normal)
                         uv = (0, 0)
                         if uv_layer:
                             uv = uv_layer.data[face.index].uv
@@ -347,9 +347,9 @@ class NodeSettings:
         if renderable is not None:
             node.renderable = renderable
 
-    def _does_node_name_match(self, nodeName):
+    def _does_node_name_match(self, node_name):
         for regex in self._node_name_matches:
-            if regex.match(nodeName):
+            if regex.match(node_name):
                 return True
         return False
 
