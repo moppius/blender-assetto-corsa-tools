@@ -31,34 +31,34 @@ class KN5Writer():
         self.write_uint(len(blob))
         self.file.write(blob)
 
-    def write_uint(self, int):
-        self.file.write(struct.pack("I", int))
+    def write_uint(self, int_val):
+        self.file.write(struct.pack("I", int_val))
 
-    def write_int(self, int):
-        self.file.write(struct.pack("i", int))
+    def write_int(self, int_val):
+        self.file.write(struct.pack("i", int_val))
 
     def write_ushort(self, short):
         self.file.write(struct.pack("H", short))
 
-    def write_byte(self, b):
-        self.file.write(struct.pack("B", b))
+    def write_byte(self, byte):
+        self.file.write(struct.pack("B", byte))
 
-    def write_bool(self, bool):
-        self.file.write(struct.pack("?", bool))
+    def write_bool(self, bool_val):
+        self.file.write(struct.pack("?", bool_val))
 
     def write_float(self, f):
         self.file.write(struct.pack("f", f))
 
-    def write_vector2(self, v):
-        self.file.write(struct.pack("2f", *v))
+    def write_vector2(self, vector2):
+        self.file.write(struct.pack("2f", *vector2))
 
-    def write_vector3(self, v):
-        self.file.write(struct.pack("3f", *v))
+    def write_vector3(self, vector3):
+        self.file.write(struct.pack("3f", *vector3))
 
-    def write_vector4(self, v):
-        self.file.write(struct.pack("4f", *v))
+    def write_vector4(self, vector4):
+        self.file.write(struct.pack("4f", *vector4))
 
-    def write_matrix(self, m):
-        for r in range(0,4):
-            for c in range(0,4):
-                self.write_float(m[c][r])
+    def write_matrix(self, matrix):
+        for row in range(4):
+            for col in range(4):
+                self.write_float(matrix[col][row])
