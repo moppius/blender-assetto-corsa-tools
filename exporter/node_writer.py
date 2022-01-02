@@ -247,8 +247,8 @@ class NodeWriter():
                     indices.extend((faceIndices[1], faceIndices[2], faceIndices[0]))
                     if len(faceIndices) == 4:
                         indices.extend((faceIndices[2], faceIndices[3], faceIndices[0]))
-                vertices=[v for v, index in sorted(vertices.items(), key=lambda k: k[1])]
-                materialId=self.materialsWriter.materialPositions[materialName]
+                vertices = [v for v, index in sorted(vertices.items(), key=lambda k: k[1])]
+                materialId = self.materialsWriter.material_positions[materialName]
                 meshes.append(Mesh(materialId, vertices, indices))
         finally:
             self.context.blend_data.meshes.remove(meshCopy)
