@@ -280,7 +280,6 @@ class MaterialSettings:
 
     def _get_material_texture_mapping_name(self, mappingName):
         if TEXTURES in self.settings[MATERIALS][self.material_settings_key]:
-            print(self.settings[MATERIALS][self.material_settings_key][TEXTURES][mappingName])
             return self.settings[MATERIALS][self.material_settings_key][TEXTURES][mappingName]["textureName"]
         return None
 
