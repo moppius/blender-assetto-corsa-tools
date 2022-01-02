@@ -64,8 +64,8 @@ class TextureWriter(KN5Writer):
         image_copy = texture.image.copy()
         try:
             if image_copy.file_format in ("PNG", "DDS", ""):
-                if image_copy.packed_file is None:
-                    image_copy.pack(False)
+                if not image_copy.packed_file:
+                    image_copy.pack()
                 image_data = image_copy.packed_file.data
                 image_header_magic_bytes = image_data[:3]
                 if image_copy.file_format != "" or image_header_magic_bytes == DDS_HEADER_BYTES:
@@ -75,7 +75,7 @@ class TextureWriter(KN5Writer):
             self.context.blend_data.images.remove(image_copy)
 
     def _convert_image_to_png(self, image):
-        if image.packed_file is not None:
-            image.unpack("WRITE_LOCAL")
-        image.pack(True)
+        if not image.packed_file:
+            image.unpack(method="WRITE_LOCAL")
+        image.pack()
         return image.packed_file.data
