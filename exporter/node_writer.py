@@ -20,6 +20,8 @@ import os
 import re
 from .exporter_utils import (
     convert_matrix,
+    convertVector3,
+    get_active_material_texture_slot,
     writeBool,
     writeFloat,
     writeMatrix,
@@ -47,7 +49,7 @@ class NodeWriter():
         self.nodeSettings = []
         self.file = file
         self.context = context
-        self.settings = settings
+        self._settings = settings
         self.warnings = warnings
         self.materialsWriter = materialsWriter
         self.scene = self.context.blend_data.scenes[0]
@@ -56,9 +58,9 @@ class NodeWriter():
 
     def initNodeSettings(self):
         self.nodeSettings = []
-        if NODES in self.settings:
-            for nodeKey in self.settings[NODES]:
-                self.nodeSettings.append(NodeSettings(self.settings, nodeKey))
+        if NODES in self._settings:
+            for nodeKey in self._settings[NODES]:
+                self.nodeSettings.append(NodeSettings(self._settings, nodeKey))
 
     def initAcObjects(self):
         self.acObjects=[]
@@ -117,7 +119,6 @@ class NodeWriter():
         nodeData["transform"] = matrix
         self.writeBaseNodeData(nodeData)
 
-
     def writeBaseNodeData(self, nodeData):
         self.writeNodeClass("Node")
         writeString(self.file, nodeData["name"])
@@ -125,9 +126,8 @@ class NodeWriter():
         writeBool(self.file, nodeData["active"])
         writeMatrix(self.file, nodeData["transform"])
 
-
     def writeMeshNode(self, obj):
-        dividedMeshes=self.splitObjectByMaterials(obj)
+        dividedMeshes=self._split_object_by_materials(obj)
         dividedMeshes=self.splitMeshesForVertexLimit(dividedMeshes)
         if obj.parent is not None or len(dividedMeshes) > 1:
             nodeData={}
@@ -200,61 +200,69 @@ class NodeWriter():
             if co[2] < minZ:
                minZ = co[2]
 
-        sphereCenter = [minX + (maxX-minX)/2, minY + (maxY-minY)/2, minZ + (maxZ-minZ)/2]
-        sphereRadius = max((maxX-minX)/2,(maxY-minY)/2,(maxZ-minZ)/2)*2
+        sphereCenter = [
+            minX + (maxX - minX) / 2,
+            minY + (maxY - minY) / 2,
+            minZ + (maxZ - minZ) / 2
+        ]
+        sphereRadius = max((maxX - minX) / 2, (maxY - minY) / 2, (maxZ - minZ) / 2) * 2
         writeVector3(self.file, sphereCenter)
         writeFloat(self.file, sphereRadius)
 
-    def splitObjectByMaterials(self, obj):
-        meshes=[]
-        meshCopy = obj.to_mesh(self.scene, True, "RENDER", True, False)
+    def _split_object_by_materials(self, obj):
+        meshes = []
+        mesh_copy = obj.to_mesh()
         try:
-            uvLayer=meshCopy.tessface_uv_textures.active
-            meshVertices=meshCopy.vertices[:]
-            meshFaces=meshCopy.tessfaces[:]
-            matrix=obj.matrix_world
-            if len(meshCopy.materials) == 0:
+            uv_layer = mesh_copy.uv_layers.active
+            mesh_vertices = mesh_copy.vertices[:]
+            mesh_copy.calc_loop_triangles()
+            mesh_faces = mesh_copy.loop_triangles[:]
+            matrix = obj.matrix_world
+
+            if not mesh_copy.materials:
                 raise Exception(f"Object '{obj.name}' has no material assigned")
-            usedMaterials=set([face.material_index for face in meshFaces])
-            for materialIndex in usedMaterials:
-                if meshCopy.materials[materialIndex] is None:
-                    raise Exception(f"Material slot {materialIndex} for object '{obj.name}' has no material assigned")
-                materialName=meshCopy.materials[materialIndex].name
-                if materialName.startswith("__") :
-                    raise Exception(f"Material '{materialName}' is ignored but is used by object '{obj.name}'")
-                vertices={}
-                indices=[]
-                for face in meshCopy.tessfaces:
-                    if not materialIndex == face.material_index:
+
+            used_materials=set([face.material_index for face in mesh_faces])
+            for material_index in used_materials:
+                if not mesh_copy.materials[material_index]:
+                    raise Exception(f"Material slot {material_index} for object '{obj.name}' has no material assigned")
+                material_name = mesh_copy.materials[material_index].name
+                if material_name.startswith("__") :
+                    raise Exception(f"Material '{material_name}' is ignored but is used by object '{obj.name}'")
+
+                vertices = {}
+                indices = []
+                for face in mesh_faces:
+                    if material_index != face.material_index:
                         continue
-                    vertexIndexForFace=0
-                    faceIndices=[]
-                    for vIndex in face.vertices:
-                        v=meshVertices[vIndex]
-                        localPosition=matrix * v.co
-                        convertedPosition = utils.convertVector3(localPosition)
-                        convertedNormal = utils.convertVector3(v.normal)
-                        uv=(0, 0)
-                        if not uvLayer is None:
-                            uv=uvLayer.data[face.index].uv[vertexIndexForFace][:2]
-                            uv=(uv[0], -uv[1])
+                    vertexIndexForFace = 0
+                    faceIndices = []
+                    for v_index in face.vertices:
+                        v = mesh_vertices[v_index]
+                        local_position = matrix @ v.co
+                        convertedPosition = convertVector3(local_position)
+                        convertedNormal = convertVector3(v.normal)
+                        uv = (0, 0)
+                        if uv_layer:
+                            uv = uv_layer.data[face.index].uv[vertexIndexForFace][:2]
+                            uv = (uv[0], -uv[1])
                         else:
-                            uv=self.calculateUvs(obj,meshCopy,materialIndex,localPosition)
-                        tangent=(1.0, 0.0, 0.0)
-                        vertex=UvVertex(convertedPosition, convertedNormal, uv, tangent)
+                            uv = self.calculateUvs(obj, mesh_copy, material_index, local_position)
+                        tangent = (1.0, 0.0, 0.0)
+                        vertex = UvVertex(convertedPosition, convertedNormal, uv, tangent)
                         if not vertex in vertices:
-                            newIndex=len(vertices)
-                            vertices[vertex]=newIndex
+                            newIndex = len(vertices)
+                            vertices[vertex] = newIndex
                         faceIndices.append(vertices[vertex])
-                        vertexIndexForFace+=1
+                        vertexIndexForFace += 1
                     indices.extend((faceIndices[1], faceIndices[2], faceIndices[0]))
                     if len(faceIndices) == 4:
                         indices.extend((faceIndices[2], faceIndices[3], faceIndices[0]))
                 vertices = [v for v, index in sorted(vertices.items(), key=lambda k: k[1])]
-                materialId = self.materialsWriter.material_positions[materialName]
+                materialId = self.materialsWriter.material_positions[material_name]
                 meshes.append(Mesh(materialId, vertices, indices))
         finally:
-            self.context.blend_data.meshes.remove(meshCopy)
+            obj.to_mesh_clear()
         return meshes
 
     def splitMeshesForVertexLimit(self, dividedMeshes):
@@ -287,7 +295,7 @@ class NodeWriter():
         x = co[0] / size[0]
         y = co[1] / size[1]
         mat = mesh.materials[materialId]
-        textureSlot = utils.get_active_material_texture_slot(mat)
+        textureSlot = get_active_material_texture_slot(mat)
         if textureSlot:
             x *= textureSlot.scale[0]
             y *= textureSlot.scale[1]
@@ -298,7 +306,7 @@ class NodeWriter():
 
 class NodeProperties:
     def __init__(self, node):
-        ac=node.assettoCorsa
+        ac = node.assettoCorsa
         self.name = node.name
         self.lodIn = ac.lodIn
         self.lodOut = ac.lodOut
@@ -309,14 +317,18 @@ class NodeProperties:
         self.renderable = ac.renderable
 
 
+NODE_SETTINGS = (
+
+)
+
 class NodeSettings:
     def __init__(self, settings, node_settings_key):
-        self.settings = settings
-        self.node_settings_key = node_settings_key
-        self.node_name_matches = self.convert_to_matches_list(node_settings_key)
+        self._settings = settings
+        self._node_settings_key = node_settings_key
+        self._node_name_matches = self._convert_to_matches_list(node_settings_key)
 
     def apply_settings_to_node(self, node):
-        if not self.does_node_name_match(node.name):
+        if not self._does_node_name_match(node.name):
             return
         lodIn = self.getNodeLodIn()
         if lodIn is not None:
@@ -340,19 +352,19 @@ class NodeSettings:
         if renderable is not None:
             node.renderable = renderable
 
-    def does_node_name_match(self, nodeName):
-        for regex in self.node_name_matches:
+    def _does_node_name_match(self, nodeName):
+        for regex in self._node_name_matches:
             if regex.match(nodeName):
                 return True
         return False
 
-    def convert_to_matches_list(self, key):
-        matches=[]
+    def _convert_to_matches_list(self, key):
+        matches = []
         for subkey in key.split("|"):
-            matches.append(re.compile("^" + self.escapeMatchKey(subkey) + "$", re.IGNORECASE))
+            matches.append(re.compile(f"^{self._escape_match_key(subkey)}$", re.IGNORECASE))
         return matches
 
-    def escapeMatchKey(self, key):
+    def _escape_match_key(self, key):
         wildcardReplacement="__WILDCARD__"
         key=key.replace("*",wildcardReplacement)
         key=re.escape(key)
@@ -360,38 +372,38 @@ class NodeSettings:
         return key
 
     def getNodeLodIn(self):
-        if "lodIn" in self.settings[NODES][self.node_settings_key]:
-            return self.settings[NODES][self.node_settings_key]["lodIn"]
+        if "lodIn" in self._settings[NODES][self._node_settings_key]:
+            return self._settings[NODES][self._node_settings_key]["lodIn"]
         return None
 
     def getNodeLodOut(self):
-        if "lodOut" in self.settings[NODES][self.node_settings_key]:
-            return self.settings[NODES][self.node_settings_key]["lodOut"]
+        if "lodOut" in self._settings[NODES][self._node_settings_key]:
+            return self._settings[NODES][self._node_settings_key]["lodOut"]
         return None
 
     def getNodeLayer(self):
-        if "layer" in self.settings[NODES][self.node_settings_key]:
-            return self.settings[NODES][self.node_settings_key]["layer"]
+        if "layer" in self._settings[NODES][self._node_settings_key]:
+            return self._settings[NODES][self._node_settings_key]["layer"]
         return None
 
     def getNodeCastShadows(self):
-        if "castShadows" in self.settings[NODES][self.node_settings_key]:
-            return self.settings[NODES][self.node_settings_key]["castShadows"]
+        if "castShadows" in self._settings[NODES][self._node_settings_key]:
+            return self._settings[NODES][self._node_settings_key]["castShadows"]
         return None
 
     def getNodeIsVisible(self):
-        if "isVisible" in self.settings[NODES][self.node_settings_key]:
-            return self.settings[NODES][self.node_settings_key]["isVisible"]
+        if "isVisible" in self._settings[NODES][self._node_settings_key]:
+            return self._settings[NODES][self._node_settings_key]["isVisible"]
         return None
 
     def getNodeIsTransparent(self):
-        if "isTransparent" in self.settings[NODES][self.node_settings_key]:
-            return self.settings[NODES][self.node_settings_key]["isTransparent"]
+        if "isTransparent" in self._settings[NODES][self._node_settings_key]:
+            return self._settings[NODES][self._node_settings_key]["isTransparent"]
         return None
 
     def getNodeIsRenderable(self):
-        if "isRenderable" in self.settings[NODES][self.node_settings_key]:
-            return self.settings[NODES][self.node_settings_key]["isRenderable"]
+        if "isRenderable" in self._settings[NODES][self._node_settings_key]:
+            return self._settings[NODES][self._node_settings_key]["isRenderable"]
         return None
 
 
