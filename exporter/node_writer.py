@@ -46,7 +46,7 @@ class NodeWriter(KN5Writer):
         self.settings = settings
         self.warnings = warnings
         self.material_writer = material_writer
-        self.scene = self.context.blend_data.scenes[0]
+        self.scene = self.context.scene
         self._init_assetto_corsa_objects()
         self._init_node_settings()
 
