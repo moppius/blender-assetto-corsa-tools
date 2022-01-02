@@ -26,18 +26,18 @@ This addon is made for the latest Blender version (currently 3.0.0), others may 
 
 ## Install
 
-1. Download kn5exporter.zip
+1. Download the _assetto_corsa_tools.zip_ from the [latest Release](https://github.com/moppius/blender-assetto-corsa-tools/releases/latest).
 2. Start Blender
-3. File -> User Preferences -> Addons
-4. Click "Install from File..."  and select the downloaded zip file
-5. Enable addon "Assetto Corsa (.kn5)"
+3. Go to _Edit -> Preferences -> Addons_
+4. Click "Install..." in the top right and browse to the downloaded zip file
+5. Enable the **"Assetto Corsa (.kn5)"** addon
 
 
 ## Usage
 
-1. File -> Export -> Assetto Corsa (.kn5)
-2. Select target folder to save the track. Make sure that a valid settings.json file exists.
-3. Copy the created file to the target track folder in your Assetto Corsa install folder.
+1. Set up a track scene with geometry and helpers
+2. Go to _File -> Export -> Assetto Corsa (.kn5)_
+3. Select target folder to save the track. Make sure that a valid _settings.json_ file exists
 
 
 ## Notes
