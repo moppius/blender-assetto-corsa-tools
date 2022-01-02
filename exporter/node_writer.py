@@ -39,9 +39,12 @@ NodeClass = {
 }
 
 
+NODES = "nodes"
+
+
 class NodeWriter():
     def __init__(self, file, context, settings, warnings, materialsWriter):
-        self.nodeSettings=[]
+        self.nodeSettings = []
         self.file = file
         self.context = context
         self.settings = settings
@@ -52,66 +55,66 @@ class NodeWriter():
         self.initNodeSettings()
 
     def initNodeSettings(self):
-        self.nodeSettings=[]
-        if "nodes" in self.settings:
-            for nodeKey in self.settings["nodes"]:
+        self.nodeSettings = []
+        if NODES in self.settings:
+            for nodeKey in self.settings[NODES]:
                 self.nodeSettings.append(NodeSettings(self.settings, nodeKey))
 
     def initAcObjects(self):
         self.acObjects=[]
         for o in ASSETTO_CORSA_OBJECTS:
-            self.acObjects.append(re.compile("^" + o + "$"))
+            self.acObjects.append(re.compile(f"^{o}$"))
 
-    def isAcObject(self, name):
+    def is_ac_object(self, name):
         for regex in self.acObjects:
-            if regex.match(name) is not None:
+            if regex.match(name):
                 return True
         return False
 
     def write(self):
         self.writeBaseNode(None, "BlenderFile")
         for o in sorted(self.context.blend_data.objects, key=lambda k: len(k.children)):
-            if o.parent is None:
+            if not o.parent:
                 self.writeObject(o)
 
-    def writeObject(self, object):
-        if not object.name.startswith("__"):
-            if object.type == "MESH":
-                if len(object.children) != 0:
-                    raise Exception("A mesh cannot contain children ('%s')" % object.name)
-                self.writeMeshNode(object)
+    def writeObject(self, obj):
+        if not obj.name.startswith("__"):
+            if obj.type == "MESH":
+                if len(obj.children) != 0:
+                    raise Exception(f"A mesh cannot contain children ('{obj.name}')")
+                self.writeMeshNode(obj)
             else:
-                self.writeBaseNode(object, object.name)
-            for child in object.children:
+                self.writeBaseNode(obj, obj.name)
+            for child in obj.children:
                 self.writeObject(child)
 
-    def anyChildIsMesh(self, object):
-        for child in object.children:
-            if child.type=="MESH" or self.anyChildIsMesh(child):
+    def any_child_is_mesh(self, obj):
+        for child in obj.children:
+            if child.type in ["MESH", "CURVE"] or self.any_child_is_mesh(child):
                 return True
         return False
 
-    def writeBaseNode(self, object, nodeName):
+    def writeBaseNode(self, obj, nodeName):
         nodeData={}
         matrix = None
         childCount = 0
-        if object is None:
+        if not obj:
             matrix = mathutils.Matrix()
             for o in self.context.blend_data.objects:
-                if o.parent is None and not o.name.startswith("__"):
-                    childCount+=1
+                if not o.parent and not o.name.startswith("__"):
+                    childCount += 1
         else:
-            if not self.isAcObject(object.name) and not self.anyChildIsMesh(object):
-                self.warnings.append("Unknown logical object '{0}' might prevent other objects from loading.{1}\tRename it to '__{0}' if you do not want to export it.".format(object.name, os.linesep))
-            matrix = convert_matrix(object.matrix_local)
-            for o in object.children:
-                if not o.name.startswith("__"):
-                    childCount+=1
+            if not self.is_ac_object(obj.name) and not self.any_child_is_mesh(obj):
+                self.warnings.append(f"Unknown logical object '{obj.name}' might prevent other objects from loading.{os.linesep}\tRename it to '__{obj.name}' if you do not want to export it.")
+            matrix = convert_matrix(obj.matrix_local)
+            for child in obj.children:
+                if not child.name.startswith("__"):
+                    childCount += 1
 
-        nodeData["name"]=nodeName
-        nodeData["childCount"]=childCount
-        nodeData["active"]=True
-        nodeData["transform"]=matrix
+        nodeData["name"] = nodeName
+        nodeData["childCount"] = childCount
+        nodeData["active"] = True
+        nodeData["transform"] = matrix
         self.writeBaseNodeData(nodeData)
 
 
@@ -123,38 +126,38 @@ class NodeWriter():
         writeMatrix(self.file, nodeData["transform"])
 
 
-    def writeMeshNode(self, object):
-        dividedMeshes=self.splitObjectByMaterials(object)
+    def writeMeshNode(self, obj):
+        dividedMeshes=self.splitObjectByMaterials(obj)
         dividedMeshes=self.splitMeshesForVertexLimit(dividedMeshes)
-        if object.parent is not None or len(dividedMeshes) > 1:
+        if obj.parent is not None or len(dividedMeshes) > 1:
             nodeData={}
-            nodeData["name"]=object.name
+            nodeData["name"]=obj.name
             nodeData["childCount"]=len(dividedMeshes)
             nodeData["active"]=True
             transformMatrix=mathutils.Matrix()
-            if object.parent is not None:
-                transformMatrix = convert_matrix(object.parent.matrix_world.inverted())
+            if obj.parent is not None:
+                transformMatrix = convert_matrix(obj.parent.matrix_world.inverted())
             nodeData["transform"]=transformMatrix
             self.writeBaseNodeData(nodeData)
-        nodeProperties=NodeProperties(object)
+        nodeProperties=NodeProperties(obj)
         for nodeSetting in self.nodeSettings:
-            nodeSetting.applySettingsToNode(nodeProperties)
+            nodeSetting.apply_settings_to_node(nodeProperties)
         for mesh in dividedMeshes:
-            self.writeMesh(object, mesh, nodeProperties)
+            self.writeMesh(obj, mesh, nodeProperties)
 
     def writeNodeClass(self, nodeClass):
         writeUInt(self.file, NodeClass[nodeClass])
 
-    def writeMesh(self, object, mesh, nodeProperties):
+    def writeMesh(self, obj, mesh, nodeProperties):
         self.writeNodeClass("Mesh")
-        writeString(self.file, object.name)
+        writeString(self.file, obj.name)
         writeUInt(self.file, 0) #Child count, none allowed
         writeBool(self.file, True) #Active
         writeBool(self.file, nodeProperties.castShadows) #castShadows
         writeBool(self.file, nodeProperties.visible) #isVisible
         writeBool(self.file, nodeProperties.transparent) #isTransparent
-        if len(mesh.vertices)>2**16:
-            raise Exception("Only %d vertices per mesh allowed. ('%s')" % (2**16, object.name))
+        if len(mesh.vertices) > 2**16:
+            raise Exception("Only %d vertices per mesh allowed. ('%s')" % (2**16, obj.name))
         writeUInt(self.file, len(mesh.vertices))
         for v in mesh.vertices:
             writeVector3(self.file, v.co)
@@ -165,7 +168,7 @@ class NodeWriter():
         for i in mesh.indices:
             writeUShort(self.file, i)
         if mesh.materialId is None:
-            self.warnings.append("No material to mesh '%s' assigned" % object.name)
+            self.warnings.append("No material to mesh '%s' assigned" % obj.name)
             writeUInt(self.file, 0)
         else:
             writeUInt(self.file, mesh.materialId)
@@ -176,14 +179,14 @@ class NodeWriter():
         writeBool(self.file, nodeProperties.renderable) #isRenderable
 
     def writeBoundingSphere(self, vertices):
-        maxX=-999999999
-        maxY=-999999999
-        maxZ=-999999999
-        minX=999999999
-        minY=999999999
-        minZ=999999999
+        maxX = -999999999
+        maxY = -999999999
+        maxZ = -999999999
+        minX = 999999999
+        minY = 999999999
+        minZ = 999999999
         for v in vertices:
-            co=v.co
+            co = v.co
             if co[0] > maxX:
                maxX = co[0]
             if co[0] < minX:
@@ -202,23 +205,23 @@ class NodeWriter():
         writeVector3(self.file, sphereCenter)
         writeFloat(self.file, sphereRadius)
 
-    def splitObjectByMaterials(self, object):
+    def splitObjectByMaterials(self, obj):
         meshes=[]
-        meshCopy = object.to_mesh(self.scene, True, "RENDER", True, False)
+        meshCopy = obj.to_mesh(self.scene, True, "RENDER", True, False)
         try:
             uvLayer=meshCopy.tessface_uv_textures.active
             meshVertices=meshCopy.vertices[:]
             meshFaces=meshCopy.tessfaces[:]
-            matrix=object.matrix_world
+            matrix=obj.matrix_world
             if len(meshCopy.materials) == 0:
-                raise Exception("Object '%s' has no material assigned" % (object.name))
+                raise Exception(f"Object '{obj.name}' has no material assigned")
             usedMaterials=set([face.material_index for face in meshFaces])
             for materialIndex in usedMaterials:
                 if meshCopy.materials[materialIndex] is None:
-                    raise Exception("Material slot %i for object '%s' has no material assigned" % (materialIndex, object.name))
+                    raise Exception(f"Material slot {materialIndex} for object '{obj.name}' has no material assigned")
                 materialName=meshCopy.materials[materialIndex].name
                 if materialName.startswith("__") :
-                    raise Exception("Material '%s' is ignored but is used by object '%s'" % (materialName, object.name))
+                    raise Exception(f"Material '{materialName}' is ignored but is used by object '{obj.name}'")
                 vertices={}
                 indices=[]
                 for face in meshCopy.tessfaces:
@@ -236,7 +239,7 @@ class NodeWriter():
                             uv=uvLayer.data[face.index].uv[vertexIndexForFace][:2]
                             uv=(uv[0], -uv[1])
                         else:
-                            uv=self.calculateUvs(object,meshCopy,materialIndex,localPosition)
+                            uv=self.calculateUvs(obj,meshCopy,materialIndex,localPosition)
                         tangent=(1.0, 0.0, 0.0)
                         vertex=UvVertex(convertedPosition, convertedNormal, uv, tangent)
                         if not vertex in vertices:
@@ -255,8 +258,8 @@ class NodeWriter():
         return meshes
 
     def splitMeshesForVertexLimit(self, dividedMeshes):
-        newMeshes=[]
-        limit=2**16
+        newMeshes = []
+        limit = 2**16
         for mesh in dividedMeshes:
             if len(mesh.vertices)>limit:
                 startIndex=0
@@ -275,15 +278,14 @@ class NodeWriter():
                             break
                     vertices=[mesh.vertices[v] for v, index in sorted(vertexIndexMapping.items(), key=lambda k: k[1])]
                     newMeshes.append(Mesh(mesh.materialId, vertices, newIndices))
-
             else:
                 newMeshes.append(mesh)
         return newMeshes
 
-    def calculateUvs(self, object, mesh, materialId, co):
-        size = object.dimensions
-        x = co[0]/size[0]
-        y = co[1]/size[1]
+    def calculateUvs(self, obj, mesh, materialId, co):
+        size = obj.dimensions
+        x = co[0] / size[0]
+        y = co[1] / size[1]
         mat = mesh.materials[materialId]
         textureSlot = utils.get_active_material_texture_slot(mat)
         if textureSlot:
@@ -308,13 +310,13 @@ class NodeProperties:
 
 
 class NodeSettings:
-    def __init__(self, settings, nodeSettingsKey):
+    def __init__(self, settings, node_settings_key):
         self.settings = settings
-        self.nodeSettingsKey=nodeSettingsKey
-        self.nodeNameMatches=self.convertToMatchesList(nodeSettingsKey)
+        self.node_settings_key = node_settings_key
+        self.node_name_matches = self.convert_to_matches_list(node_settings_key)
 
-    def applySettingsToNode(self, node):
-        if not self.doesNodeNameMatch(node.name):
+    def apply_settings_to_node(self, node):
+        if not self.does_node_name_match(node.name):
             return
         lodIn = self.getNodeLodIn()
         if lodIn is not None:
@@ -338,13 +340,13 @@ class NodeSettings:
         if renderable is not None:
             node.renderable = renderable
 
-    def doesNodeNameMatch(self, nodeName):
-        for regex in self.nodeNameMatches:
-            if regex.match(nodeName) is not None:
+    def does_node_name_match(self, nodeName):
+        for regex in self.node_name_matches:
+            if regex.match(nodeName):
                 return True
         return False
 
-    def convertToMatchesList(self, key):
+    def convert_to_matches_list(self, key):
         matches=[]
         for subkey in key.split("|"):
             matches.append(re.compile("^" + self.escapeMatchKey(subkey) + "$", re.IGNORECASE))
@@ -358,62 +360,62 @@ class NodeSettings:
         return key
 
     def getNodeLodIn(self):
-        if "lodIn" in self.settings["nodes"][self.nodeSettingsKey]:
-            return self.settings["nodes"][self.nodeSettingsKey]["lodIn"]
+        if "lodIn" in self.settings[NODES][self.node_settings_key]:
+            return self.settings[NODES][self.node_settings_key]["lodIn"]
         return None
 
     def getNodeLodOut(self):
-        if "lodOut" in self.settings["nodes"][self.nodeSettingsKey]:
-            return self.settings["nodes"][self.nodeSettingsKey]["lodOut"]
+        if "lodOut" in self.settings[NODES][self.node_settings_key]:
+            return self.settings[NODES][self.node_settings_key]["lodOut"]
         return None
 
     def getNodeLayer(self):
-        if "layer" in self.settings["nodes"][self.nodeSettingsKey]:
-            return self.settings["nodes"][self.nodeSettingsKey]["layer"]
+        if "layer" in self.settings[NODES][self.node_settings_key]:
+            return self.settings[NODES][self.node_settings_key]["layer"]
         return None
 
     def getNodeCastShadows(self):
-        if "castShadows" in self.settings["nodes"][self.nodeSettingsKey]:
-            return self.settings["nodes"][self.nodeSettingsKey]["castShadows"]
+        if "castShadows" in self.settings[NODES][self.node_settings_key]:
+            return self.settings[NODES][self.node_settings_key]["castShadows"]
         return None
 
     def getNodeIsVisible(self):
-        if "isVisible" in self.settings["nodes"][self.nodeSettingsKey]:
-            return self.settings["nodes"][self.nodeSettingsKey]["isVisible"]
+        if "isVisible" in self.settings[NODES][self.node_settings_key]:
+            return self.settings[NODES][self.node_settings_key]["isVisible"]
         return None
 
     def getNodeIsTransparent(self):
-        if "isTransparent" in self.settings["nodes"][self.nodeSettingsKey]:
-            return self.settings["nodes"][self.nodeSettingsKey]["isTransparent"]
+        if "isTransparent" in self.settings[NODES][self.node_settings_key]:
+            return self.settings[NODES][self.node_settings_key]["isTransparent"]
         return None
 
     def getNodeIsRenderable(self):
-        if "isRenderable" in self.settings["nodes"][self.nodeSettingsKey]:
-            return self.settings["nodes"][self.nodeSettingsKey]["isRenderable"]
+        if "isRenderable" in self.settings[NODES][self.node_settings_key]:
+            return self.settings[NODES][self.node_settings_key]["isRenderable"]
         return None
 
 
 class UvVertex:
     def __init__(self, co, normal, uv, tangent):
-        self.co=co
-        self.normal=normal
-        self.uv=uv
-        self.tangent=tangent
-        self.hash=None
+        self.co = co
+        self.normal = normal
+        self.uv = uv
+        self.tangent = tangent
+        self.hash = None
 
     def __hash__(self):
-        if self.hash is None:
-            self.hash=hash(hash(self.co[0]) ^
-                      hash(self.co[1]) ^
-                      hash(self.co[2]) ^
-                      hash(self.normal[0]) ^
-                      hash(self.normal[1]) ^
-                      hash(self.normal[2]) ^
-                      hash(self.uv[0]) ^
-                      hash(self.uv[1]) ^
-                      hash(self.tangent[0]) ^
-                      hash(self.tangent[1]) ^
-                      hash(self.tangent[2]))
+        if not self.hash:
+            self.hash = hash(hash(self.co[0]) ^
+                        hash(self.co[1]) ^
+                        hash(self.co[2]) ^
+                        hash(self.normal[0]) ^
+                        hash(self.normal[1]) ^
+                        hash(self.normal[2]) ^
+                        hash(self.uv[0]) ^
+                        hash(self.uv[1]) ^
+                        hash(self.tangent[0]) ^
+                        hash(self.tangent[1]) ^
+                        hash(self.tangent[2]))
         return self.hash
 
     def __eq__(self, other):
@@ -430,6 +432,6 @@ class UvVertex:
 
 class Mesh:
     def __init__(self, materialId, vertices, indices):
-        self.materialId=materialId
-        self.vertices=vertices
-        self.indices=indices
+        self.materialId = materialId
+        self.vertices = vertices
+        self.indices = indices
