@@ -17,6 +17,7 @@
 import math
 import os
 import re
+import bmesh
 from mathutils import Matrix
 from .exporter_utils import (
     convert_matrix,
@@ -207,10 +208,19 @@ class NodeWriter(KN5Writer):
     def _split_object_by_materials(self, obj):
         meshes = []
         mesh_copy = obj.to_mesh()
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh_copy)
+        bmesh.ops.triangulate(bm, faces=bm.faces[:])
+        bm.to_mesh(mesh_copy)
+        bm.free()
+
         try:
             uv_layer = mesh_copy.uv_layers.active
-            mesh_vertices = mesh_copy.vertices[:]
             mesh_copy.calc_loop_triangles()
+            mesh_copy.calc_tangents()
+            mesh_vertices = mesh_copy.vertices[:]
+            mesh_loops = mesh_copy.loops[:]
             mesh_triangles = mesh_copy.loop_triangles[:]
             matrix = obj.matrix_world
 
@@ -232,18 +242,18 @@ class NodeWriter(KN5Writer):
                         continue
                     vertexIndexForFace = 0
                     face_indices = []
-                    for v_index in triangle.vertices:
-                        v = mesh_vertices[v_index]
-                        local_position = matrix @ v.co
+                    for loop_index in triangle.loops:
+                        loop = mesh_loops[loop_index]
+                        local_position = matrix @ mesh_vertices[loop.vertex_index].co
                         converted_position = convert_vector3(local_position)
-                        converted_normal = convert_vector3(v.normal)
+                        converted_normal = convert_vector3(loop.normal)
                         uv = (0, 0)
                         if uv_layer:
                             uv = uv_layer.data[triangle.index].uv
                             uv = (uv[0], -uv[1])
                         else:
                             uv = self._calculate_uvs(obj, mesh_copy, material_index, local_position)
-                        tangent = (1.0, 0.0, 0.0)
+                        tangent = loop.tangent
                         vertex = UvVertex(converted_position, converted_normal, uv, tangent)
                         if not vertex in vertices:
                             newIndex = len(vertices)
