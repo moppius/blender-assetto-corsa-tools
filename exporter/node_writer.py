@@ -41,20 +41,20 @@ class NodeWriter(KN5Writer):
     def __init__(self, file, context, settings, warnings, material_writer):
         super().__init__(file)
 
-        self.nodeSettings = []
         self.context = context
         self.settings = settings
         self.warnings = warnings
         self.material_writer = material_writer
         self.scene = self.context.scene
+        self.node_settings = []
         self._init_assetto_corsa_objects()
         self._init_node_settings()
 
     def _init_node_settings(self):
-        self.nodeSettings = []
+        self.node_settings = []
         if NODES in self.settings:
             for nodeKey in self.settings[NODES]:
-                self.nodeSettings.append(NodeSettings(self.settings, nodeKey))
+                self.node_settings.append(node_settings(self.settings, nodeKey))
 
     def _init_assetto_corsa_objects(self):
         self.acObjects=[]
@@ -78,7 +78,7 @@ class NodeWriter(KN5Writer):
             if obj.type == "MESH":
                 if len(obj.children) != 0:
                     raise Exception(f"A mesh cannot contain children ('{obj.name}')")
-                self.write_mesh_node(obj)
+                self._write_mesh_node(obj)
             else:
                 self._write_base_node(obj, obj.name)
             for child in obj.children:
@@ -114,13 +114,13 @@ class NodeWriter(KN5Writer):
         self._write_base_node_data(node_data)
 
     def _write_base_node_data(self, node_data):
-        self.write_node_class("Node")
+        self._write_node_class("Node")
         self.write_string(node_data["name"])
         self.write_uint(node_data["childCount"])
         self.write_bool(node_data["active"])
         self.write_matrix(node_data["transform"])
 
-    def write_mesh_node(self, obj):
+    def _write_mesh_node(self, obj):
         divided_meshes = self._split_object_by_materials(obj)
         divided_meshes = self._split_meshes_for_vertex_limit(divided_meshes)
         if obj.parent or len(divided_meshes) > 1:
@@ -134,16 +134,16 @@ class NodeWriter(KN5Writer):
             node_data["transform"] = transformMatrix
             self._write_base_node_data(node_data)
         nodeProperties = NodeProperties(obj)
-        for nodeSetting in self.nodeSettings:
+        for nodeSetting in self.node_settings:
             nodeSetting.apply_settings_to_node(nodeProperties)
         for mesh in divided_meshes:
-            self.writeMesh(obj, mesh, nodeProperties)
+            self._write_mesh(obj, mesh, nodeProperties)
 
-    def write_node_class(self, nodeClass):
+    def _write_node_class(self, nodeClass):
         self.write_uint(NodeClass[nodeClass])
 
-    def writeMesh(self, obj, mesh, nodeProperties):
-        self.write_node_class("Mesh")
+    def _write_mesh(self, obj, mesh, nodeProperties):
+        self._write_node_class("Mesh")
         self.write_string(obj.name)
         self.write_uint(0) # Child count, none allowed
         is_active = True
@@ -170,39 +170,39 @@ class NodeWriter(KN5Writer):
         self.write_uint(nodeProperties.layer) #Layer
         self.write_float(nodeProperties.lodIn) #LOD In
         self.write_float(nodeProperties.lodOut) #LOD Out
-        self.writeBoundingSphere(mesh.vertices)
+        self._write_bounding_sphere(mesh.vertices)
         self.write_bool(nodeProperties.renderable) #isRenderable
 
-    def writeBoundingSphere(self, vertices):
-        maxX = -999999999
-        maxY = -999999999
-        maxZ = -999999999
-        minX = 999999999
-        minY = 999999999
-        minZ = 999999999
+    def _write_bounding_sphere(self, vertices):
+        max_x = -999999999
+        max_y = -999999999
+        max_z = -999999999
+        min_x = 999999999
+        min_y = 999999999
+        min_z = 999999999
         for v in vertices:
             co = v.co
-            if co[0] > maxX:
-               maxX = co[0]
-            if co[0] < minX:
-               minX = co[0]
-            if co[1] > maxY:
-               maxY = co[1]
-            if co[1] < minY:
-               minY = co[1]
-            if co[2] > maxZ:
-               maxZ = co[2]
-            if co[2] < minZ:
-               minZ = co[2]
+            if co[0] > max_x:
+               max_x = co[0]
+            if co[0] < min_x:
+               min_x = co[0]
+            if co[1] > max_y:
+               max_y = co[1]
+            if co[1] < min_y:
+               min_y = co[1]
+            if co[2] > max_z:
+               max_z = co[2]
+            if co[2] < min_z:
+               min_z = co[2]
 
-        sphereCenter = [
-            minX + (maxX - minX) / 2,
-            minY + (maxY - minY) / 2,
-            minZ + (maxZ - minZ) / 2
+        sphere_center = [
+            min_x + (max_x - min_x) / 2,
+            min_y + (max_y - min_y) / 2,
+            min_z + (max_z - min_z) / 2
         ]
-        sphereRadius = max((maxX - minX) / 2, (maxY - minY) / 2, (maxZ - minZ) / 2) * 2
-        self.write_vector3(sphereCenter)
-        self.write_float(sphereRadius)
+        sphere_radius = max((max_x - min_x) / 2, (max_y - min_y) / 2, (max_z - min_z) / 2) * 2
+        self.write_vector3(sphere_center)
+        self.write_float(sphere_radius)
 
     def _split_object_by_materials(self, obj):
         meshes = []
@@ -211,13 +211,13 @@ class NodeWriter(KN5Writer):
             uv_layer = mesh_copy.uv_layers.active
             mesh_vertices = mesh_copy.vertices[:]
             mesh_copy.calc_loop_triangles()
-            mesh_faces = mesh_copy.loop_triangles[:]
+            mesh_triangles = mesh_copy.loop_triangles[:]
             matrix = obj.matrix_world
 
             if not mesh_copy.materials:
                 raise Exception(f"Object '{obj.name}' has no material assigned")
 
-            used_materials=set([face.material_index for face in mesh_faces])
+            used_materials = set([triangle.material_index for triangle in mesh_triangles])
             for material_index in used_materials:
                 if not mesh_copy.materials[material_index]:
                     raise Exception(f"Material slot {material_index} for object '{obj.name}' has no material assigned")
@@ -227,24 +227,24 @@ class NodeWriter(KN5Writer):
 
                 vertices = {}
                 indices = []
-                for face in mesh_faces:
-                    if material_index != face.material_index:
+                for triangle in mesh_triangles:
+                    if material_index != triangle.material_index:
                         continue
                     vertexIndexForFace = 0
                     face_indices = []
-                    for v_index in face.vertices:
+                    for v_index in triangle.vertices:
                         v = mesh_vertices[v_index]
                         local_position = matrix @ v.co
-                        convertedPosition = convert_vector3(local_position)
-                        convertedNormal = convert_vector3(v.normal)
+                        converted_position = convert_vector3(local_position)
+                        converted_normal = convert_vector3(v.normal)
                         uv = (0, 0)
                         if uv_layer:
-                            uv = uv_layer.data[face.index].uv
+                            uv = uv_layer.data[triangle.index].uv
                             uv = (uv[0], -uv[1])
                         else:
                             uv = self._calculate_uvs(obj, mesh_copy, material_index, local_position)
                         tangent = (1.0, 0.0, 0.0)
-                        vertex = UvVertex(convertedPosition, convertedNormal, uv, tangent)
+                        vertex = UvVertex(converted_position, converted_normal, uv, tangent)
                         if not vertex in vertices:
                             newIndex = len(vertices)
                             vertices[vertex] = newIndex
@@ -316,7 +316,7 @@ NODE_SETTINGS = (
 
 )
 
-class NodeSettings:
+class node_settings:
     def __init__(self, settings, node_settings_key):
         self._settings = settings
         self._node_settings_key = node_settings_key
