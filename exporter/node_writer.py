@@ -127,19 +127,19 @@ class NodeWriter():
         writeMatrix(self.file, nodeData["transform"])
 
     def writeMeshNode(self, obj):
-        divided_meshes=self._split_object_by_materials(obj)
-        divided_meshes=self._split_meshes_for_vertex_limit(divided_meshes)
-        if obj.parent is not None or len(divided_meshes) > 1:
-            nodeData={}
-            nodeData["name"]=obj.name
-            nodeData["childCount"]=len(divided_meshes)
-            nodeData["active"]=True
-            transformMatrix=mathutils.Matrix()
-            if obj.parent is not None:
+        divided_meshes = self._split_object_by_materials(obj)
+        divided_meshes = self._split_meshes_for_vertex_limit(divided_meshes)
+        if obj.parent or len(divided_meshes) > 1:
+            nodeData = {}
+            nodeData["name"] = obj.name
+            nodeData["childCount"] = len(divided_meshes)
+            nodeData["active"] = True
+            transformMatrix = mathutils.Matrix()
+            if obj.parent:
                 transformMatrix = convert_matrix(obj.parent.matrix_world.inverted())
-            nodeData["transform"]=transformMatrix
+            nodeData["transform"] = transformMatrix
             self.writeBaseNodeData(nodeData)
-        nodeProperties=NodeProperties(obj)
+        nodeProperties = NodeProperties(obj)
         for nodeSetting in self.nodeSettings:
             nodeSetting.apply_settings_to_node(nodeProperties)
         for mesh in divided_meshes:

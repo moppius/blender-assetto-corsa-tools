@@ -67,7 +67,7 @@ def convert_matrix(m):
     co=convertVector3(co)
     rotation=convertQuaternion(rotation)
     mat_loc = mathutils.Matrix.Translation(co)
-    mat_sca = mathutils.Matrix.Scale(scale[0],4,(1,0,0))*mathutils.Matrix.Scale(scale[2],4,(0,1,0))*mathutils.Matrix.Scale(scale[1],4,(0,0,1))
+    mat_sca = mathutils.Matrix.Scale(scale[0], 4, (1,0,0)) * mathutils.Matrix.Scale(scale[2],4,(0,1,0)) * mathutils.Matrix.Scale(scale[1],4,(0,0,1))
     mat_rot = rotation.to_matrix().to_4x4()
     return mat_loc * mat_rot * mat_sca
 
