@@ -16,30 +16,29 @@
 
 import json
 import os
-import struct
 import bpy
 from mathutils import Matrix, Quaternion, Vector
 
 
-def convert_matrix(m):
-    co, rotation, scale = m.decompose()
+def convert_matrix(in_matrix):
+    co, rotation, scale = in_matrix.decompose()
     co = convert_vector3(co)
     rotation = convert_quaternion(rotation)
     mat_loc = Matrix.Translation(co)
-    mat_scale_1 = Matrix.Scale(scale[0], 4, (1,0,0))
-    mat_scale_2 = Matrix.Scale(scale[2], 4, (0,1,0))
-    mat_scale_3 = Matrix.Scale(scale[1], 4, (0,0,1))
+    mat_scale_1 = Matrix.Scale(scale[0], 4, (1, 0, 0))
+    mat_scale_2 = Matrix.Scale(scale[2], 4, (0, 1, 0))
+    mat_scale_3 = Matrix.Scale(scale[1], 4, (0, 0, 1))
     mat_scale = mat_scale_1 @ mat_scale_2 @ mat_scale_3
     mat_rot = rotation.to_matrix().to_4x4()
     return mat_loc @ mat_rot @ mat_scale
 
 
-def convert_vector3(v):
-    return Vector((v[0], v[2], -v[1]))
+def convert_vector3(in_vec):
+    return Vector((in_vec[0], in_vec[2], -in_vec[1]))
 
 
-def convert_quaternion(q):
-    axis, angle = q.to_axis_angle()
+def convert_quaternion(in_quat):
+    axis, angle = in_quat.to_axis_angle()
     axis = convert_vector3(axis)
     return Quaternion(axis, angle)
 
@@ -73,9 +72,9 @@ def get_active_material_texture_slot(material):
 
 
 def read_settings(file):
-    fullPath=os.path.abspath(file)
-    dirName=os.path.dirname(fullPath)
-    settingsPath=os.path.join(dirName, "settings.json")
-    if not os.path.exists(settingsPath):
+    full_path = os.path.abspath(file)
+    dir_name = os.path.dirname(full_path)
+    settings_path = os.path.join(dir_name, "settings.json")
+    if not os.path.exists(settings_path):
         return {}
-    return json.loads(open(settingsPath, "r").read())
+    return json.loads(open(settings_path, "r").read())
