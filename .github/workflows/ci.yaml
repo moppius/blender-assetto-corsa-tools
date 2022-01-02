@@ -1,0 +1,25 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+name: CI
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        pip install pylint==2.5.0
+    - name: Lint with pylint
+      run: |
+        python -m pylint $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) --disable=R,fixme,C0103,C0114,C0115,C0116 --enable=cyclic-import
+    - name: Refactoring suggestions
+      run: |
+        python -m pylint $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) --disable=E,W,C,cyclic-import --enable=fixme --reports=y --exit-zero
