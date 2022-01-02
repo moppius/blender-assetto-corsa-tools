@@ -1,9 +1,5 @@
 # Blender KN5 Exporter
 
-This repository was initially created from the Blender 2.76 addon distributed as [_kn5exporter.zip_ on Thomas Hagnhofer's website](https://site.hagn.io/assettocorsa/blender-kn5-exporter).
-
-Please visit that site for a downloadable example track, and more information on the original implementation.
-
 
 ## Features
 
@@ -17,15 +13,14 @@ Please visit that site for a downloadable example track, and more information on
 
 ## Current Bugs & Limitations
 
-* Wrong values for tangent space (needed for normal mapping)
 * No support for skinned meshes (needed for animations)
 * No support for AI
 * Only geometry of mesh objects will be exported
-* Only textures of type "Image" or "Movie" supported
+* Only textures of type "Image" supported
 
 
 ## Requirements
-This addon is made for the latest Blender version (currently 2.76), others may work but are not supported
+This addon is made for the latest Blender version (currently 3.0.0), others may work but are not supported.
 
 
 ## Install
@@ -36,8 +31,16 @@ This addon is made for the latest Blender version (currently 2.76), others may w
 4. Click "Install from File..."  and select the downloaded zip file
 5. Enable addon "Assetto Corsa (.kn5)"
 
+
 ## Usage
 
 1. File -> Export -> Assetto Corsa (.kn5)
 2. Select target folder to save the track. Make sure that a valid settings.json file exists.
 3. Copy the created file to the target track folder in your Assetto Corsa install folder.
+
+
+## Notes
+
+This repository was initially created from the Blender 2.76 addon distributed as [_kn5exporter.zip_ on Thomas Hagnhofer's website](https://site.hagn.io/assettocorsa/blender-kn5-exporter).
+
+Please visit that site for a downloadable example track, and more information on the original implementation.
