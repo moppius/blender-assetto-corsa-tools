@@ -43,7 +43,7 @@ class TextureWriter():
 
     def writeTexture(self, texture):
         writeInt(self.file, 1) #IsActive
-        writeString(self.file, texture.name)
+        writeString(self.file, texture.image.name)
         image_data = self._get_image_data_from_texture(texture)
         writeBlob(self.file, image_data)
 
@@ -60,8 +60,8 @@ class TextureWriter():
                 elif len(texture_node.image.pixels) == 0:
                     self.warnings.append(f"Ignoring texture node without image data '{texture_node.name}'")
                 else:
-                    self.available_textures[texture_node.name] = texture_node
-                    self.texture_positions[texture_node.name] = position
+                    self.available_textures[texture_node.image.name] = texture_node
+                    self.texture_positions[texture_node.image.name] = position
                     position += 1
 
     def _get_image_data_from_texture(self, texture):
