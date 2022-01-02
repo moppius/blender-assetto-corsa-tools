@@ -216,12 +216,12 @@ class NodeWriter(KN5Writer):
         bm.free()
 
         try:
-            uv_layer = mesh_copy.uv_layers.active
             mesh_copy.calc_loop_triangles()
             mesh_copy.calc_tangents()
             mesh_vertices = mesh_copy.vertices[:]
             mesh_loops = mesh_copy.loops[:]
             mesh_triangles = mesh_copy.loop_triangles[:]
+            uv_layer = mesh_copy.uv_layers.active
             matrix = obj.matrix_world
 
             if not mesh_copy.materials:
@@ -249,7 +249,7 @@ class NodeWriter(KN5Writer):
                         converted_normal = convert_vector3(loop.normal)
                         uv = (0, 0)
                         if uv_layer:
-                            uv = uv_layer.data[triangle.index].uv
+                            uv = uv_layer.data[loop_index].uv
                             uv = (uv[0], -uv[1])
                         else:
                             uv = self._calculate_uvs(obj, mesh_copy, material_index, local_position)
