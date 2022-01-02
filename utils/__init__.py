@@ -16,8 +16,8 @@
 
 import json
 import os
-import bpy
 from inspect import isclass
+import bpy
 from mathutils import Matrix, Vector, Quaternion
 
 
