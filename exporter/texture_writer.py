@@ -65,8 +65,7 @@ class TextureWriter():
                     position += 1
 
     def _get_image_data_from_texture(self, texture):
-        image = texture.image
-        image_copy = image.copy()
+        image_copy = texture.image.copy()
         try:
             if image_copy.file_format in ("PNG", "DDS", ""):
                 if image_copy.packed_file is None:
