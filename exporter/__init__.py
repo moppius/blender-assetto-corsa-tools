@@ -19,10 +19,10 @@ import os
 import bpy
 from bpy.props import BoolProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper
+from .kn5_writer import KN5Writer
 from .texture_writer import TextureWriter
 from .material_writer import MaterialsWriter
 from .node_writer import NodeWriter
-from .exporter_utils import writeUInt
 from ..utils import readSettings
 from ..utils.constants import KN5_HEADER_BYTES
 
@@ -76,13 +76,39 @@ class CopyClipboardButtonOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class KN5FileWriter(KN5Writer):
+    def __init__(self, file, context, settings, warnings):
+        super().__init__(file)
+
+        self.context = context
+        self.settings = settings
+        self.warnings = warnings
+
+        self.file_version = 5
+
+    def write(self):
+        self._write_header()
+        self._write_content()
+
+    def _write_header(self):
+        self.file.write(KN5_HEADER_BYTES)
+        self.write_uint(self.file_version)
+
+    def _write_content(self):
+        texture_writer = TextureWriter(self.file, self.context, self.warnings)
+        texture_writer.write()
+        material_writer = MaterialsWriter(self.file, self.context, self.settings, self.warnings)
+        material_writer.write()
+        node_writer = NodeWriter(self.file, self.context, self.settings, self.warnings, material_writer)
+        node_writer.write()
+
+
 class ExportKN5(bpy.types.Operator, ExportHelper):
     bl_idname      = "exporter.kn5"
     bl_label       = "Export KN5"
     bl_description = "Export KN5"
 
     filename_ext = ".kn5"
-    fileVersion  = 5
 
     def execute(self, context):
         warnings = []
@@ -90,8 +116,8 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
             output_file = open(self.filepath,"wb")
             try:
                 settings = readSettings(self.filepath)
-                self._write_header(output_file)
-                self._write_content(output_file, context, settings, warnings)
+                kn5_writer = KN5FileWriter(output_file, context, settings, warnings)
+                kn5_writer.write()
                 bpy.ops.kn5.report_message(
                     'INVOKE_DEFAULT',
                     is_error=False,
@@ -116,18 +142,6 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
                 message=os.linesep.join(warnings)
             )
         return {'FINISHED'}
-
-    def _write_header(self, output_file):
-        output_file.write(KN5_HEADER_BYTES)
-        writeUInt(output_file, self.fileVersion)
-
-    def _write_content(self, output_file, context, settings, warnings):
-        texture_writer = TextureWriter(output_file, context, warnings)
-        texture_writer.write()
-        material_writer = MaterialsWriter(output_file, context, settings, warnings)
-        material_writer.write()
-        node_writer = NodeWriter(output_file, context, settings, warnings, material_writer)
-        node_writer.write()
 
 
 def menu_func(self, context):

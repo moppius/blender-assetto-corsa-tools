@@ -14,38 +14,34 @@
 # Copyright (C) 2014  Thomas Hagnhofer
 
 
-import os
-import tempfile
-from .exporter_utils import (
-    get_all_texture_nodes,
-    writeInt,
-    writeString,
-    writeBlob,
-)
+from .kn5_writer import KN5Writer
+from .exporter_utils import get_all_texture_nodes
 
 
 DDS_HEADER_BYTES = b"DDS"
 
 
-class TextureWriter():
+class TextureWriter(KN5Writer):
     def __init__(self, file, context, warnings):
+        super().__init__(file)
+
         self.available_textures = {}
         self.texture_positions = {}
-        self.file = file
         self.warnings = warnings
         self.context = context
         self._fill_available_image_textures()
 
     def write(self):
-        writeInt(self.file,len(self.available_textures))
+        self.write_int(len(self.available_textures))
         for textureName, position in sorted(self.texture_positions.items(), key=lambda k: k[1]):
-            self.writeTexture(self.available_textures[textureName])
+            self._write_texture(self.available_textures[textureName])
 
-    def writeTexture(self, texture):
-        writeInt(self.file, 1) #IsActive
-        writeString(self.file, texture.image.name)
+    def _write_texture(self, texture):
+        is_active = 1
+        self.write_int(is_active)
+        self.write_string(texture.image.name)
         image_data = self._get_image_data_from_texture(texture)
-        writeBlob(self.file, image_data)
+        self.write_blob(image_data)
 
     def _fill_available_image_textures(self):
         self.available_textures = {}

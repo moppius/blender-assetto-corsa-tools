@@ -22,15 +22,8 @@ from .exporter_utils import (
     convert_matrix,
     convertVector3,
     get_active_material_texture_slot,
-    writeBool,
-    writeFloat,
-    writeMatrix,
-    writeString,
-    writeUInt,
-    writeUShort,
-    writeVector2,
-    writeVector3,
 )
+from .kn5_writer import KN5Writer
 from ..utils.constants import ASSETTO_CORSA_OBJECTS
 
 
@@ -44,12 +37,13 @@ NodeClass = {
 NODES = "nodes"
 
 
-class NodeWriter():
+class NodeWriter(KN5Writer):
     def __init__(self, file, context, settings, warnings, materialsWriter):
+        super().__init__(file)
+
         self.nodeSettings = []
-        self.file = file
         self.context = context
-        self._settings = settings
+        self.settings = settings
         self.warnings = warnings
         self.materialsWriter = materialsWriter
         self.scene = self.context.blend_data.scenes[0]
@@ -58,9 +52,9 @@ class NodeWriter():
 
     def initNodeSettings(self):
         self.nodeSettings = []
-        if NODES in self._settings:
-            for nodeKey in self._settings[NODES]:
-                self.nodeSettings.append(NodeSettings(self._settings, nodeKey))
+        if NODES in self.settings:
+            for nodeKey in self.settings[NODES]:
+                self.nodeSettings.append(NodeSettings(self.settings, nodeKey))
 
     def initAcObjects(self):
         self.acObjects=[]
@@ -120,11 +114,11 @@ class NodeWriter():
         self.writeBaseNodeData(nodeData)
 
     def writeBaseNodeData(self, nodeData):
-        self.writeNodeClass("Node")
-        writeString(self.file, nodeData["name"])
-        writeUInt(self.file, nodeData["childCount"])
-        writeBool(self.file, nodeData["active"])
-        writeMatrix(self.file, nodeData["transform"])
+        self.write_node_class("Node")
+        self.write_string(nodeData["name"])
+        self.write_uint(nodeData["childCount"])
+        self.write_bool(nodeData["active"])
+        self.write_matrix(nodeData["transform"])
 
     def writeMeshNode(self, obj):
         divided_meshes = self._split_object_by_materials(obj)
@@ -145,38 +139,39 @@ class NodeWriter():
         for mesh in divided_meshes:
             self.writeMesh(obj, mesh, nodeProperties)
 
-    def writeNodeClass(self, nodeClass):
-        writeUInt(self.file, NodeClass[nodeClass])
+    def write_node_class(self, nodeClass):
+        self.write_uint(NodeClass[nodeClass])
 
     def writeMesh(self, obj, mesh, nodeProperties):
-        self.writeNodeClass("Mesh")
-        writeString(self.file, obj.name)
-        writeUInt(self.file, 0) #Child count, none allowed
-        writeBool(self.file, True) #Active
-        writeBool(self.file, nodeProperties.castShadows) #castShadows
-        writeBool(self.file, nodeProperties.visible) #isVisible
-        writeBool(self.file, nodeProperties.transparent) #isTransparent
+        self.write_node_class("Mesh")
+        self.write_string(obj.name)
+        self.write_uint(0) # Child count, none allowed
+        is_active = True
+        self.write_bool(is_active)
+        self.write_bool(nodeProperties.castShadows)
+        self.write_bool(nodeProperties.visible)
+        self.write_bool(nodeProperties.transparent)
         if len(mesh.vertices) > 2**16:
-            raise Exception("Only %d vertices per mesh allowed. ('%s')" % (2**16, obj.name))
-        writeUInt(self.file, len(mesh.vertices))
+            raise Exception(f"Only {2**16} vertices per mesh allowed. ('{obj.name}')")
+        self.write_uint(len(mesh.vertices))
         for v in mesh.vertices:
-            writeVector3(self.file, v.co)
-            writeVector3(self.file, v.normal)
-            writeVector2(self.file, v.uv)
-            writeVector3(self.file, v.tangent)
-        writeUInt(self.file, len(mesh.indices))
+            self.write_vector3(v.co)
+            self.write_vector3(v.normal)
+            self.write_vector2(v.uv)
+            self.write_vector3(v.tangent)
+        self.write_uint(len(mesh.indices))
         for i in mesh.indices:
-            writeUShort(self.file, i)
+            self.write_ushort(i)
         if mesh.material_id is None:
-            self.warnings.append("No material to mesh '%s' assigned" % obj.name)
-            writeUInt(self.file, 0)
+            self.warnings.append(f"No material to mesh '{obj.name}' assigned")
+            self.write_uint(0)
         else:
-            writeUInt(self.file, mesh.material_id)
-        writeUInt(self.file, nodeProperties.layer) #Layer
-        writeFloat(self.file, nodeProperties.lodIn) #LOD In
-        writeFloat(self.file, nodeProperties.lodOut) #LOD Out
+            self.write_uint(mesh.material_id)
+        self.write_uint(nodeProperties.layer) #Layer
+        self.write_float(nodeProperties.lodIn) #LOD In
+        self.write_float(nodeProperties.lodOut) #LOD Out
         self.writeBoundingSphere(mesh.vertices)
-        writeBool(self.file, nodeProperties.renderable) #isRenderable
+        self.write_bool(nodeProperties.renderable) #isRenderable
 
     def writeBoundingSphere(self, vertices):
         maxX = -999999999
@@ -206,8 +201,8 @@ class NodeWriter():
             minZ + (maxZ - minZ) / 2
         ]
         sphereRadius = max((maxX - minX) / 2, (maxY - minY) / 2, (maxZ - minZ) / 2) * 2
-        writeVector3(self.file, sphereCenter)
-        writeFloat(self.file, sphereRadius)
+        self.write_vector3(sphereCenter)
+        self.write_float(sphereRadius)
 
     def _split_object_by_materials(self, obj):
         meshes = []

@@ -20,16 +20,8 @@ import re
 from .exporter_utils import (
     get_active_material_texture_slot,
     get_texture_nodes,
-    writeBool,
-    writeByte,
-    writeInt,
-    writeString,
-    writeUInt,
-    writeFloat,
-    writeVector2,
-    writeVector3,
-    writeVector4,
 )
+from .kn5_writer import KN5Writer
 
 
 BlendMode = {
@@ -50,46 +42,47 @@ PROPERTIES = "properties"
 TEXTURES = "textures"
 
 
-class MaterialsWriter():
+class MaterialsWriter(KN5Writer):
     def __init__(self, file, context, settings, warnings):
+        super().__init__(file)
+
         self.available_materials = {}
         self.material_positions = {}
         self.material_settings = []
-        self.file = file
         self.context = context
         self.settings = settings
         self.warnings = warnings
         self._fill_available_materials()
 
     def write(self):
-        writeInt(self.file,len(self.available_materials))
-        for materialName, position in sorted(self.material_positions.items(), key=lambda k: k[1]):
-            material=self.available_materials[materialName]
-            self.writeMaterial(material)
+        self.write_int(len(self.available_materials))
+        for material_name, position in sorted(self.material_positions.items(), key=lambda k: k[1]):
+            material = self.available_materials[material_name]
+            self._write_material(material)
 
-    def writeMaterial(self, material):
-        writeString(self.file, material.name)
-        writeString(self.file, material.shaderName)
-        writeByte(self.file, material.alphaBlendMode)
-        writeBool(self.file, material.alphaTested)
-        writeInt(self.file, material.depthMode)
-        writeUInt(self.file, len(material.shaderProperties))
+    def _write_material(self, material):
+        self.write_string(material.name)
+        self.write_string(material.shaderName)
+        self.write_byte(material.alphaBlendMode)
+        self.write_bool(material.alphaTested)
+        self.write_int(material.depthMode)
+        self.write_uint(len(material.shaderProperties))
         for property_name in material.shaderProperties:
-            self.writeMaterialProperty(material.shaderProperties[property_name])
-        writeUInt(self.file, len(material.texture_mapping))
+            self._write_material_property(material.shaderProperties[property_name])
+        self.write_uint(len(material.texture_mapping))
         texture_slot = 0
         for mapping_name in material.texture_mapping:
-            writeString(self.file, mapping_name)
-            writeUInt(self.file, texture_slot)
-            writeString(self.file, material.texture_mapping[mapping_name])
+            self.write_string(mapping_name)
+            self.write_uint(texture_slot)
+            self.write_string(material.texture_mapping[mapping_name])
             texture_slot += 1
 
-    def writeMaterialProperty(self, property):
-        writeString(self.file, property.name)
-        writeFloat(self.file, property.valueA)
-        writeVector2(self.file, property.valueB)
-        writeVector3(self.file, property.valueC)
-        writeVector4(self.file, property.valueD)
+    def _write_material_property(self, property):
+        self.write_string(property.name)
+        self.write_float(property.valueA)
+        self.write_vector2(property.valueB)
+        self.write_vector3(property.valueC)
+        self.write_vector4(property.valueD)
 
     def _fill_available_materials(self):
         self.available_materials = {}
@@ -115,16 +108,17 @@ class MaterialsWriter():
 
 class ShaderProperty:
     def __init__(self, name):
-        self.name=name
-        self.valueA=0.0
-        self.valueB=(0.0, 0.0)
-        self.valueC=(0.0, 0.0, 0.0)
-        self.valueD=(0.0, 0.0, 0.0, 0.0)
+        self.name = name
+        self.valueA = 0.0
+        self.valueB = (0.0, 0.0)
+        self.valueC = (0.0, 0.0, 0.0)
+        self.valueD = (0.0, 0.0, 0.0, 0.0)
+
     def fill(self, property):
-        self.valueA=property.valueA
-        self.valueB=property.valueB
-        self.valueC=property.valueC
-        self.valueD=property.valueD
+        self.valueA = property.valueA
+        self.valueB = property.valueB
+        self.valueC = property.valueC
+        self.valueD = property.valueD
 
 
 class MaterialProperties:
