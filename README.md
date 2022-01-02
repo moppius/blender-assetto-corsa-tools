@@ -1,5 +1,6 @@
 # Blender KN5 Exporter
 
+[![CI](https://github.com/moppius/blender-assetto-corsa-tools/actions/workflows/ci.yaml/badge.svg)](https://github.com/moppius/blender-assetto-corsa-tools/actions/workflows/ci.yaml)
 
 ## Features
 
