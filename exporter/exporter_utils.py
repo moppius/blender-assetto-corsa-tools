@@ -62,7 +62,7 @@ def writeMatrix(file, m):
         for c in range(0,4):
             writeFloat(file, m[c][r])
 
-def convertMatrix(m):
+def convert_matrix(m):
     co, rotation, scale=m.decompose()
     co=convertVector3(co)
     rotation=convertQuaternion(rotation)

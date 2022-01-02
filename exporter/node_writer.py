@@ -19,6 +19,7 @@ import math
 import os
 import re
 from .exporter_utils import (
+    convert_matrix,
     writeBool,
     writeFloat,
     writeMatrix,
@@ -102,7 +103,7 @@ class NodeWriter():
         else:
             if not self.isAcObject(object.name) and not self.anyChildIsMesh(object):
                 self.warnings.append("Unknown logical object '{0}' might prevent other objects from loading.{1}\tRename it to '__{0}' if you do not want to export it.".format(object.name, os.linesep))
-            matrix = utils.convertMatrix(object.matrix_local)
+            matrix = convert_matrix(object.matrix_local)
             for o in object.children:
                 if not o.name.startswith("__"):
                     childCount+=1
@@ -132,7 +133,7 @@ class NodeWriter():
             nodeData["active"]=True
             transformMatrix=mathutils.Matrix()
             if object.parent is not None:
-                transformMatrix=utils.convertMatrix(object.parent.matrix_world.inverted())
+                transformMatrix = convert_matrix(object.parent.matrix_world.inverted())
             nodeData["transform"]=transformMatrix
             self.writeBaseNodeData(nodeData)
         nodeProperties=NodeProperties(object)
