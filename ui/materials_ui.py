@@ -49,15 +49,15 @@ class MaterialProperties(bpy.types.PropertyGroup):
         default="ksPerPixel")
     alphaBlendMode: EnumProperty(
         name="Alpha Blend Mode",
-        items=convert_dict_to_blender_enum(material_writer.BlendMode),
-        default=str(material_writer.BlendMode["Opaque"]))
+        items=convert_dict_to_blender_enum(material_writer.MATERIAL_BLEND_MODE),
+        default=str(material_writer.MATERIAL_BLEND_MODE["Opaque"]))
     alphaTested: BoolProperty(
         name="Alpha Tested",
         default=False)
     depthMode: EnumProperty(
         name="Depth Mode",
-        items=convert_dict_to_blender_enum(material_writer.DepthMode),
-        default=str(material_writer.DepthMode["DepthNormal"]))
+        items=convert_dict_to_blender_enum(material_writer.MATERIAL_DEPTH_MODE),
+        default=str(material_writer.MATERIAL_DEPTH_MODE["DepthNormal"]))
     shaderProperties: CollectionProperty(
         type=ShaderPropertyItem)
     shaderPropertiesActive: IntProperty(
