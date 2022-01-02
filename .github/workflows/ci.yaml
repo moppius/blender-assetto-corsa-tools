@@ -40,7 +40,7 @@ jobs:
         tag=$(git describe --tags --abbrev=0)
         release_name="$name-$tag"
         mkdir "$name"
-        rsync -av --exclude "$name" --exclude .gitignore --exclude .pylintrc --exclude .github . "$name/"
+        rsync -av --exclude "$name" --exclude .git --exclude .gitignore --exclude .pylintrc --exclude .github . "$name/"
         release_zip="${release_name}.zip"
         zip -r "$release_zip" "$name"
         rm -r "$name"
