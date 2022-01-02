@@ -23,3 +23,30 @@ jobs:
     - name: Refactoring suggestions
       run: |
         python -m pylint $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) --disable=E,W,C,cyclic-import --enable=fixme --reports=y --exit-zero
+
+  release:
+    name: Release
+    needs: [lint]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Package
+      shell: bash
+      run: |
+        name=assetto_corsa_tools
+        tag=$(git describe --tags --abbrev=0)
+        release_name="$name-$tag"
+        mkdir "$name"
+        cp -a . "$name/"
+        release_zip="${release_name}.zip"
+        zip -r "$release_zip" "$name"
+        rm -r "$name"
+        echo -n "$(shasum -ba 256 "${release_zip}" | cut -d " " -f 1)" > "${release_zip}.sha256"
+    - name: Publish
+      uses: softprops/action-gh-release@v1
+      with:
+        draft: true
+        files: 'assetto_corsa_tools*'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
