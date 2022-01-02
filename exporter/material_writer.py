@@ -111,6 +111,7 @@ class MaterialsWriter():
                 self.material_positions[material.name] = position
                 position += 1
 
+
 class ShaderProperty:
     def __init__(self, name):
         self.name=name
@@ -123,6 +124,7 @@ class ShaderProperty:
         self.valueB=property.valueB
         self.valueC=property.valueC
         self.valueD=property.valueD
+
 
 class MaterialProperties:
     def __init__(self, material):
@@ -166,6 +168,7 @@ class MaterialProperties:
                     shaderInput = texture.assettoCorsa.shaderInputName
                     mapping[shaderInput] = texture.name
         return mapping
+
 
 class MaterialSettings:
     def __init__(self, settings, warnings, material_settings_key):
