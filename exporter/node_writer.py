@@ -127,12 +127,12 @@ class NodeWriter():
         writeMatrix(self.file, nodeData["transform"])
 
     def writeMeshNode(self, obj):
-        dividedMeshes=self._split_object_by_materials(obj)
-        dividedMeshes=self.splitMeshesForVertexLimit(dividedMeshes)
-        if obj.parent is not None or len(dividedMeshes) > 1:
+        divided_meshes=self._split_object_by_materials(obj)
+        divided_meshes=self._split_meshes_for_vertex_limit(divided_meshes)
+        if obj.parent is not None or len(divided_meshes) > 1:
             nodeData={}
             nodeData["name"]=obj.name
-            nodeData["childCount"]=len(dividedMeshes)
+            nodeData["childCount"]=len(divided_meshes)
             nodeData["active"]=True
             transformMatrix=mathutils.Matrix()
             if obj.parent is not None:
@@ -142,7 +142,7 @@ class NodeWriter():
         nodeProperties=NodeProperties(obj)
         for nodeSetting in self.nodeSettings:
             nodeSetting.apply_settings_to_node(nodeProperties)
-        for mesh in dividedMeshes:
+        for mesh in divided_meshes:
             self.writeMesh(obj, mesh, nodeProperties)
 
     def writeNodeClass(self, nodeClass):
@@ -167,11 +167,11 @@ class NodeWriter():
         writeUInt(self.file, len(mesh.indices))
         for i in mesh.indices:
             writeUShort(self.file, i)
-        if mesh.materialId is None:
+        if mesh.material_id is None:
             self.warnings.append("No material to mesh '%s' assigned" % obj.name)
             writeUInt(self.file, 0)
         else:
-            writeUInt(self.file, mesh.materialId)
+            writeUInt(self.file, mesh.material_id)
         writeUInt(self.file, nodeProperties.layer) #Layer
         writeFloat(self.file, nodeProperties.lodIn) #LOD In
         writeFloat(self.file, nodeProperties.lodOut) #LOD Out
@@ -236,7 +236,7 @@ class NodeWriter():
                     if material_index != face.material_index:
                         continue
                     vertexIndexForFace = 0
-                    faceIndices = []
+                    face_indices = []
                     for v_index in face.vertices:
                         v = mesh_vertices[v_index]
                         local_position = matrix @ v.co
@@ -244,57 +244,57 @@ class NodeWriter():
                         convertedNormal = convertVector3(v.normal)
                         uv = (0, 0)
                         if uv_layer:
-                            uv = uv_layer.data[face.index].uv[vertexIndexForFace][:2]
+                            uv = uv_layer.data[face.index].uv
                             uv = (uv[0], -uv[1])
                         else:
-                            uv = self.calculateUvs(obj, mesh_copy, material_index, local_position)
+                            uv = self._calculate_uvs(obj, mesh_copy, material_index, local_position)
                         tangent = (1.0, 0.0, 0.0)
                         vertex = UvVertex(convertedPosition, convertedNormal, uv, tangent)
                         if not vertex in vertices:
                             newIndex = len(vertices)
                             vertices[vertex] = newIndex
-                        faceIndices.append(vertices[vertex])
+                        face_indices.append(vertices[vertex])
                         vertexIndexForFace += 1
-                    indices.extend((faceIndices[1], faceIndices[2], faceIndices[0]))
-                    if len(faceIndices) == 4:
-                        indices.extend((faceIndices[2], faceIndices[3], faceIndices[0]))
+                    indices.extend((face_indices[1], face_indices[2], face_indices[0]))
+                    if len(face_indices) == 4:
+                        indices.extend((face_indices[2], face_indices[3], face_indices[0]))
                 vertices = [v for v, index in sorted(vertices.items(), key=lambda k: k[1])]
-                materialId = self.materialsWriter.material_positions[material_name]
-                meshes.append(Mesh(materialId, vertices, indices))
+                material_id = self.materialsWriter.material_positions[material_name]
+                meshes.append(Mesh(material_id, vertices, indices))
         finally:
             obj.to_mesh_clear()
         return meshes
 
-    def splitMeshesForVertexLimit(self, dividedMeshes):
-        newMeshes = []
+    def _split_meshes_for_vertex_limit(self, divided_meshes):
+        new_meshes = []
         limit = 2**16
-        for mesh in dividedMeshes:
-            if len(mesh.vertices)>limit:
-                startIndex=0
-                while startIndex<len(mesh.indices):
-                    vertexIndexMapping={}
-                    newIndices=[]
-                    for i in range(startIndex, len(mesh.indices), 3):
-                        startIndex+=3
-                        face=mesh.indices[i:i+3]
-                        for faceIndex in face:
-                            if not faceIndex in vertexIndexMapping:
-                                newIndex=len(vertexIndexMapping)
-                                vertexIndexMapping[faceIndex]=newIndex
-                            newIndices.append(vertexIndexMapping[faceIndex])
-                        if len(vertexIndexMapping) >= limit-3:
+        for mesh in divided_meshes:
+            if len(mesh.vertices) > limit:
+                start_index = 0
+                while start_index < len(mesh.indices):
+                    vertex_index_mapping = {}
+                    new_indices = []
+                    for i in range(start_index, len(mesh.indices), 3):
+                        start_index += 3
+                        face = mesh.indices[i:i+3]
+                        for face_index in face:
+                            if not face_index in vertex_index_mapping:
+                                newIndex = len(vertex_index_mapping)
+                                vertex_index_mapping[face_index] = newIndex
+                            new_indices.append(vertex_index_mapping[face_index])
+                        if len(vertex_index_mapping) >= limit-3:
                             break
-                    vertices=[mesh.vertices[v] for v, index in sorted(vertexIndexMapping.items(), key=lambda k: k[1])]
-                    newMeshes.append(Mesh(mesh.materialId, vertices, newIndices))
+                    vertices = [mesh.vertices[v] for v, index in sorted(vertex_index_mapping.items(), key=lambda k: k[1])]
+                    new_meshes.append(Mesh(mesh.material_id, vertices, new_indices))
             else:
-                newMeshes.append(mesh)
-        return newMeshes
+                new_meshes.append(mesh)
+        return new_meshes
 
-    def calculateUvs(self, obj, mesh, materialId, co):
+    def _calculate_uvs(self, obj, mesh, material_id, co):
         size = obj.dimensions
         x = co[0] / size[0]
         y = co[1] / size[1]
-        mat = mesh.materials[materialId]
+        mat = mesh.materials[material_id]
         textureSlot = get_active_material_texture_slot(mat)
         if textureSlot:
             x *= textureSlot.scale[0]
@@ -443,7 +443,7 @@ class UvVertex:
 
 
 class Mesh:
-    def __init__(self, materialId, vertices, indices):
-        self.materialId = materialId
+    def __init__(self, material_id, vertices, indices):
+        self.material_id = material_id
         self.vertices = vertices
         self.indices = indices
