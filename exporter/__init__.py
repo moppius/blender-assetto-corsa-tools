@@ -21,7 +21,7 @@ from bpy.props import BoolProperty, StringProperty
 from bpy_extras.io_utils import ExportHelper
 from .kn5_writer import KN5Writer
 from .texture_writer import TextureWriter
-from .material_writer import MaterialsWriter
+from .material_writer import MaterialWriter
 from .node_writer import NodeWriter
 from ..utils import readSettings
 from ..utils.constants import KN5_HEADER_BYTES
@@ -97,7 +97,7 @@ class KN5FileWriter(KN5Writer):
     def _write_content(self):
         texture_writer = TextureWriter(self.file, self.context, self.warnings)
         texture_writer.write()
-        material_writer = MaterialsWriter(self.file, self.context, self.settings, self.warnings)
+        material_writer = MaterialWriter(self.file, self.context, self.settings, self.warnings)
         material_writer.write()
         node_writer = NodeWriter(self.file, self.context, self.settings, self.warnings, material_writer)
         node_writer.write()

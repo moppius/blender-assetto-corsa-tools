@@ -42,7 +42,7 @@ PROPERTIES = "properties"
 TEXTURES = "textures"
 
 
-class MaterialsWriter(KN5Writer):
+class MaterialWriter(KN5Writer):
     def __init__(self, file, context, settings, warnings):
         super().__init__(file)
 

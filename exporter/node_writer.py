@@ -38,14 +38,14 @@ NODES = "nodes"
 
 
 class NodeWriter(KN5Writer):
-    def __init__(self, file, context, settings, warnings, materialsWriter):
+    def __init__(self, file, context, settings, warnings, material_writer):
         super().__init__(file)
 
         self.nodeSettings = []
         self.context = context
         self.settings = settings
         self.warnings = warnings
-        self.materialsWriter = materialsWriter
+        self.material_writer = material_writer
         self.scene = self.context.blend_data.scenes[0]
         self.initAcObjects()
         self.initNodeSettings()
@@ -254,7 +254,7 @@ class NodeWriter(KN5Writer):
                     if len(face_indices) == 4:
                         indices.extend((face_indices[2], face_indices[3], face_indices[0]))
                 vertices = [v for v, index in sorted(vertices.items(), key=lambda k: k[1])]
-                material_id = self.materialsWriter.material_positions[material_name]
+                material_id = self.material_writer.material_positions[material_name]
                 meshes.append(Mesh(material_id, vertices, indices))
         finally:
             obj.to_mesh_clear()
