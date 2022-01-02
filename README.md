@@ -36,8 +36,9 @@ This addon is made for the latest Blender version (currently 3.0.0), others may 
 ## Usage
 
 1. Set up a track scene with geometry and helpers
-2. Go to _File -> Export -> Assetto Corsa (.kn5)_
-3. Select target folder to save the track. Make sure that a valid _settings.json_ file exists
+   * If you don't know how to do this, there's a [good overview tutorial on the assettocorsamods.com site here](https://assettocorsamods.net/threads/build-your-first-track-basic-guide.12/)
+3. Go to _File -> Export -> Assetto Corsa (.kn5)_
+4. Select target folder to save the track. Make sure that a valid _settings.json_ file exists
 
 
 ## Notes
