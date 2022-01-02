@@ -13,43 +13,45 @@
 #
 # Copyright (C) 2014  Thomas Hagnhofer
 
+
 import bpy
 from bpy.props import *
 
+
 class NodeProperties(bpy.types.PropertyGroup):
-    lodIn = FloatProperty(
-        name="LOD In", 
+    lodIn: FloatProperty(
+        name="LOD In",
         min=0.0,
         unit="LENGTH",
         subtype="DISTANCE",
-        description="Nearest distance to the object until it disapears")
-    lodOut = FloatProperty(
+        description="Nearest distance to the object until it disappears")
+    lodOut: FloatProperty(
         name="LOD Out",
         min=0.0,
         unit="LENGTH",
         subtype="DISTANCE",
-        description="Farthest distance to the object until it disapears")
-    layer = IntProperty(
-        name="Layer", 
+        description="Farthest distance to the object until it disappears")
+    layer: IntProperty(
+        name="Layer",
         default = 0,
         description="Unknown behaviour")
-    castShadows = BoolProperty(
+    castShadows: BoolProperty(
         name="Cast Shadows",
         default = True)
-    visible=BoolProperty(
+    visible: BoolProperty(
         name="Visible",
         default=True,
         description="Unknown behaviour")
-    transparent = BoolProperty(
+    transparent: BoolProperty(
         name="Transparent",
         default=False)
-    renderable = BoolProperty(
+    renderable: BoolProperty(
         name="Renderable",
         default=True,
         description="Toggles if the object should be rendered or not")
 
 
-class NodePanel(bpy.types.Panel):
+class KN5_PT_NodePanel(bpy.types.Panel):
     bl_label = "Assetto Corsa"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -57,11 +59,10 @@ class NodePanel(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        if context.object is not None and context.object.type == "MESH":
-            return True
- 
+        return context.object and context.object.type in ["MESH", "CURVE"]
+
     def draw(self, context):
-        ac=context.object.assettoCorsa
+        ac = context.object.assettoCorsa
         self.layout.prop(ac, "renderable")
         self.layout.prop(ac, "castShadows")
         self.layout.prop(ac, "transparent")
@@ -70,8 +71,20 @@ class NodePanel(bpy.types.Panel):
         self.layout.prop(ac, "layer")
         self.layout.prop(ac, "visible")
 
+
+REGISTER_CLASSES = (
+    NodeProperties,
+    KN5_PT_NodePanel,
+)
+
+
 def register():
+    for cls in REGISTER_CLASSES:
+        bpy.utils.register_class(cls)
     bpy.types.Object.assettoCorsa = bpy.props.PointerProperty(type=NodeProperties)
-    
+
+
 def unregister():
     del bpy.types.Object.assettoCorsa
+    for cls in reversed(REGISTER_CLASSES):
+        bpy.utils.unregister_class(cls)

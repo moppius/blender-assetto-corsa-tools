@@ -13,33 +13,47 @@
 #
 # Copyright (C) 2014  Thomas Hagnhofer
 
+
 import bpy
 from bpy.props import *
 
+
 class TextureProperties(bpy.types.PropertyGroup):
-    shaderInputName = StringProperty(
-        name="Shader Input Name", 
-        default = "txDiffuse",
-        description ="Name of the shader input slot the texture should be assigned to")
+    shaderInputName: StringProperty(
+        name="Shader Input Name",
+        default="txDiffuse",
+        description="Name of the shader input slot the texture should be assigned to")
 
 
-class TexturePanel(bpy.types.Panel):
+class KN5_PT_TexturePanel(bpy.types.Panel):
     bl_label = "Assetto Corsa"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "texture"
-    
+    bl_space_type = "NODE_EDITOR"
+    bl_region_type = "UI"
+    bl_category = "Assetto Corsa"
+
     @classmethod
     def poll(cls, context):
-        if context.texture is not None and context.texture.type == "IMAGE":
-            return True
- 
+        if len(context.selected_nodes) == 1:
+            return isinstance(context.selected_nodes[0], bpy.types.ShaderNodeTexImage)
+        return False
+
     def draw(self, context):
-        ac=context.texture.assettoCorsa
+        ac = context.selected_nodes[0].assettoCorsa
         self.layout.prop(ac, "shaderInputName")
 
+
+REGISTER_CLASSES = (
+    TextureProperties,
+    KN5_PT_TexturePanel,
+)
+
 def register():
-    bpy.types.Texture.assettoCorsa = bpy.props.PointerProperty(type=TextureProperties)
-    
+    for cls in REGISTER_CLASSES:
+        bpy.utils.register_class(cls)
+    bpy.types.ShaderNodeTexImage.assettoCorsa = bpy.props.PointerProperty(type=TextureProperties)
+
+
 def unregister():
-    del bpy.types.Texture.assettoCorsa
+    del bpy.types.ShaderNodeTexImage.assettoCorsa
+    for cls in reversed(REGISTER_CLASSES):
+        bpy.utils.unregister_class(cls)
