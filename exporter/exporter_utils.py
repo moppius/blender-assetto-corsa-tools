@@ -18,6 +18,7 @@ import json
 import mathutils
 import os
 import struct
+import bpy
 
 
 def writeString(file, string):
