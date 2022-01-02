@@ -153,9 +153,9 @@ class MaterialProperties:
         mapping = {}
         texture_nodes = get_texture_nodes(material)
         for texture_node in texture_nodes:
-            if not texture_node.name.startswith("__"):
+            if not texture_node.image.name.startswith("__"):
                 shaderInput = texture_node.assettoCorsa.shaderInputName
-                mapping[shaderInput] = texture_node.name
+                mapping[shaderInput] = texture_node.image.name
         return mapping
 
 
