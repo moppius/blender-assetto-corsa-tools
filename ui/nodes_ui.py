@@ -15,7 +15,11 @@
 
 
 import bpy
-from bpy.props import *
+from bpy.props import (
+    BoolProperty,
+    FloatProperty,
+    IntProperty,
+)
 
 
 class NodeProperties(bpy.types.PropertyGroup):
@@ -33,11 +37,11 @@ class NodeProperties(bpy.types.PropertyGroup):
         description="Farthest distance to the object until it disappears")
     layer: IntProperty(
         name="Layer",
-        default = 0,
+        default=0,
         description="Unknown behaviour")
     castShadows: BoolProperty(
         name="Cast Shadows",
-        default = True)
+        default=True)
     visible: BoolProperty(
         name="Visible",
         default=True,
@@ -62,14 +66,14 @@ class KN5_PT_NodePanel(bpy.types.Panel):
         return context.object and context.object.type in ["MESH", "CURVE"]
 
     def draw(self, context):
-        ac = context.object.assettoCorsa
-        self.layout.prop(ac, "renderable")
-        self.layout.prop(ac, "castShadows")
-        self.layout.prop(ac, "transparent")
-        self.layout.prop(ac, "lodIn")
-        self.layout.prop(ac, "lodOut")
-        self.layout.prop(ac, "layer")
-        self.layout.prop(ac, "visible")
+        ac_obj = context.object.assettoCorsa
+        self.layout.prop(ac_obj, "renderable")
+        self.layout.prop(ac_obj, "castShadows")
+        self.layout.prop(ac_obj, "transparent")
+        self.layout.prop(ac_obj, "lodIn")
+        self.layout.prop(ac_obj, "lodOut")
+        self.layout.prop(ac_obj, "layer")
+        self.layout.prop(ac_obj, "visible")
 
 
 REGISTER_CLASSES = (

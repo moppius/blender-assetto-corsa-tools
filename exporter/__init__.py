@@ -44,21 +44,20 @@ class ReportOperator(bpy.types.Operator):
 
     def invoke(self, context, event):
         self.execute(context)
-        wm = context.window_manager
-        return wm.invoke_popup(self, width=600)
+        return context.window_manager.invoke_popup(self, width=600)
 
     def draw(self, context):
         if self.is_error:
             self.layout.alert = True
         row = self.layout.row()
-        row.alignment="CENTER"
+        row.alignment = "CENTER"
         row.label(text=self.title)
         for line in self.message.splitlines():
-            row=self.layout.row()
-            line=line.replace("\t"," "*4)
+            row = self.layout.row()
+            line = line.replace("\t", " " * 4)
             row.label(text=line)
         row = self.layout.row()
-        row.operator("kn5.report_clipboard").content=self.message
+        row.operator("kn5.report_clipboard").content = self.message
 
 
 class CopyClipboardButtonOperator(bpy.types.Operator):
@@ -104,8 +103,8 @@ class KN5FileWriter(KN5Writer):
 
 
 class ExportKN5(bpy.types.Operator, ExportHelper):
-    bl_idname      = "exporter.kn5"
-    bl_label       = "Export KN5"
+    bl_idname = "exporter.kn5"
+    bl_label = "Export KN5"
     bl_description = "Export KN5"
 
     filename_ext = ".kn5"
@@ -113,7 +112,7 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         warnings = []
         try:
-            output_file = open(self.filepath,"wb")
+            output_file = open(self.filepath, "wb")
             try:
                 settings = read_settings(self.filepath)
                 kn5_writer = KN5FileWriter(output_file, context, settings, warnings)
@@ -127,12 +126,12 @@ class ExportKN5(bpy.types.Operator, ExportHelper):
             finally:
                 if not output_file is None:
                     output_file.close()
-        except:
+        except: # pylint: disable=bare-except
             error = traceback.format_exc()
             try:
                 # Remove output file so we can't crash the engine with a broken file
                 os.remove(self.filepath)
-            except:
+            except: # pylint: disable=bare-except
                 pass
             warnings.append(error)
             bpy.ops.kn5.report_message(

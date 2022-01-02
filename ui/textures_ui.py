@@ -15,7 +15,7 @@
 
 
 import bpy
-from bpy.props import *
+from bpy.props import StringProperty
 
 
 class TextureProperties(bpy.types.PropertyGroup):
@@ -38,8 +38,8 @@ class KN5_PT_TexturePanel(bpy.types.Panel):
         return False
 
     def draw(self, context):
-        ac = context.selected_nodes[0].assettoCorsa
-        self.layout.prop(ac, "shaderInputName")
+        ac_node = context.selected_nodes[0].assettoCorsa
+        self.layout.prop(ac_node, "shaderInputName")
 
 
 REGISTER_CLASSES = (
