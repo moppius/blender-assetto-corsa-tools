@@ -21,26 +21,6 @@ from inspect import isclass
 from mathutils import Matrix, Vector, Quaternion
 
 
-def convertMatrix(m):
-    co, rotation, scale=m.decompose()
-    co=convertVector3(co)
-    rotation=convertQuaternion(rotation)
-    mat_loc = Matrix.Translation(co)
-    mat_sca = Matrix.Scale(scale[0],4,(1,0,0)) * Matrix.Scale(scale[2],4,(0,1,0)) * Matrix.Scale(scale[1],4,(0,0,1))
-    mat_rot = rotation.to_matrix().to_4x4()
-    return mat_loc * mat_rot * mat_sca
-
-
-def convertVector3(v):
-    return Vector((v[0], v[2], -v[1]))
-
-
-def convertQuaternion(q):
-    axis, angle = q.to_axis_angle()
-    axis = convertVector3(axis)
-    return Quaternion(axis, angle)
-
-
 def readSettings(file):
     fullPath=os.path.abspath(file)
     dirName=os.path.dirname(fullPath)
