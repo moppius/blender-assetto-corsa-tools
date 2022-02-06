@@ -15,7 +15,7 @@
 import struct
 import bpy
 from os import linesep, makedirs, path
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 from .importer_utils import convert_matrix
 from ..utils.constants import ENCODING, KN5_HEADER_BYTES
 
@@ -292,13 +292,13 @@ class KN5Reader():
         return struct.unpack("f", self.file.read(struct.calcsize("f")))[0]
 
     def read_vector2(self):
-        return struct.unpack("2f", self.file.read(struct.calcsize("2f")))[0]
+        return struct.unpack("2f", self.file.read(struct.calcsize("2f")))
 
     def read_vector3(self):
-        return struct.unpack("3f", self.file.read(struct.calcsize("3f")))[0]
+        return Vector(struct.unpack("3f", self.file.read(struct.calcsize("3f"))))
 
     def read_vector4(self):
-        return struct.unpack("4f", self.file.read(struct.calcsize("4f")))[0]
+        return struct.unpack("4f", self.file.read(struct.calcsize("4f")))
 
     def read_matrix(self):
         matrix = Matrix()
