@@ -82,7 +82,7 @@ class KN5Node():
 
         self.indices = []
 
-        self.materialID = -1
+        self.material_id = -1
 
 
 class KN5Reader():
@@ -194,7 +194,8 @@ class KN5Reader():
             for _vertex in range(node.vertexCount):
                 node.position.append(convert_vector3(self.read_vector3()))
                 node.normal.append(self.read_vector3())
-                node.uv.append(self.read_vector2())
+                inverted_uv = self.read_vector2()
+                node.uv.append((inverted_uv[0], -inverted_uv[1]))
                 node.tangent.append(self.read_vector3())
 
             num_indices = self.read_uint()
@@ -202,7 +203,7 @@ class KN5Reader():
             for i in range(num_indices):
                 node.indices[i] = self.read_ushort()
 
-            node.materialID = self.read_uint()
+            node.material_id = self.read_uint()
             layer = self.read_uint()
             lod_in = self.read_float()
             lod_out = self.read_float()
@@ -251,7 +252,7 @@ class KN5Reader():
             for i in range(num_indices):
                 node.indices[i] = modelStream.ReadUInt16();
 
-            node.materialID = modelStream.ReadInt32();
+            node.material_id = modelStream.ReadInt32();
             modelStream.BaseStream.Position += 12;
             '''
 
@@ -322,6 +323,7 @@ def create_blender_nodes(context, model, messages: list) -> bool:
             else:
                 print(f"Warning: Texture file already exists: {texture.filename}")
 
+    new_materials = []
     for material in model.materials:
         if not bpy.data.materials.get(material.name):
             new_material = bpy.data.materials.new(name=material.name)
@@ -345,7 +347,24 @@ def create_blender_nodes(context, model, messages: list) -> bool:
             for i in range(0, len(node.indices), 3):
                 faces.append([node.indices[i], node.indices[i + 1], node.indices[i + 2]])
             mesh_data.from_pydata(node.position, [], faces)
+
+            import bmesh
+            bm = bmesh.new()
+            bm.from_mesh(mesh_data)
+            uv_layer = bm.loops.layers.uv.verify()
+            for f in bm.faces:
+                for l in f.loops:
+                    luv = l[uv_layer]
+                    luv.uv = tuple(node.uv[l.vert.index])
+            bm.to_mesh(mesh_data)
+            bm.free()
+
             new_object = bpy.data.objects.new(name=node.name, object_data=mesh_data)
+            material = bpy.data.materials.get(model.materials[node.material_id].name)
+            if new_object.data.materials:
+                new_object.data.materials[0] = material
+            else:
+                new_object.data.materials.append(material)
 
         else:
             print(f"Unexpected node type to create: {node.type}")
