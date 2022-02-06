@@ -355,6 +355,8 @@ def create_blender_nodes(context, model, messages: list) -> bool:
                 for l in f.loops:
                     luv = l[uv_layer]
                     luv.uv = node.uv[l.vert.index]
+                    l.vert.normal = convert_vector3(node.normal[l.vert.index])
+                f.smooth = True
             bm.to_mesh(mesh_data)
             bm.free()
 
