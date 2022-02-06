@@ -14,6 +14,7 @@
 
 import struct
 import bpy
+import bmesh
 from os import linesep, makedirs, path
 from mathutils import Matrix, Vector
 from .importer_utils import convert_matrix, convert_vector3
@@ -347,7 +348,6 @@ def create_blender_nodes(context, model, messages: list) -> bool:
                 faces.append([node.indices[i], node.indices[i + 1], node.indices[i + 2]])
             mesh_data.from_pydata(node.position, [], faces)
 
-            import bmesh
             bm = bmesh.new()
             bm.from_mesh(mesh_data)
             uv_layer = bm.loops.layers.uv.verify()
