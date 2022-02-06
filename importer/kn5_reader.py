@@ -354,7 +354,7 @@ def create_blender_nodes(context, model, messages: list) -> bool:
             for f in bm.faces:
                 for l in f.loops:
                     luv = l[uv_layer]
-                    luv.uv = tuple(node.uv[l.vert.index])
+                    luv.uv = node.uv[l.vert.index]
             bm.to_mesh(mesh_data)
             bm.free()
 
