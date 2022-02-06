@@ -323,7 +323,6 @@ def create_blender_nodes(context, model, messages: list) -> bool:
             else:
                 print(f"Warning: Texture file already exists: {texture.filename}")
 
-    new_materials = []
     for material in model.materials:
         if not bpy.data.materials.get(material.name):
             new_material = bpy.data.materials.new(name=material.name)
