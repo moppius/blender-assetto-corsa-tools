@@ -12,6 +12,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+ENCODING = 'utf-8'
+
 KN5_HEADER_BYTES = b"sc6969"
 
 ASSETTO_CORSA_OBJECTS = (
