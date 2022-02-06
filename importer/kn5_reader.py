@@ -16,6 +16,7 @@ import struct
 import bpy
 from os import linesep, makedirs, path
 from mathutils import Matrix
+from .importer_utils import convert_matrix
 from ..utils.constants import ENCODING, KN5_HEADER_BYTES
 
 
@@ -332,19 +333,21 @@ def create_blender_nodes(context, model, messages: list) -> bool:
         if node.parent_id < 0:
             continue
 
+        new_object = None
+
         if node.type == NODE_TYPE_DUMMY:
-            empty = bpy.data.objects.new(name=node.name, object_data=None)
-            empty.empty_display_type = 'ARROWS'
-            context.scene.collection.objects.link(empty)
-            empty.matrix_world = node.hmatrix
+            new_object = bpy.data.objects.new(name=node.name, object_data=None)
+            new_object.empty_display_type = 'ARROWS'
 
         elif node.type == NODE_TYPE_STATIC_MESH:
             mesh_data = bpy.data.meshes.new(name=f"{node.name}_Mesh")
-            mesh_object = bpy.data.objects.new(name=node.name, object_data=mesh_data)
-            context.scene.collection.objects.link(mesh_object)
-            mesh_object.matrix_world = node.hmatrix
+            new_object = bpy.data.objects.new(name=node.name, object_data=mesh_data)
 
         else:
             print(f"Unexpected node type to create: {node.type}")
+
+        if new_object is not None:
+            new_object.matrix_world = convert_matrix(node.hmatrix)
+            context.scene.collection.objects.link(new_object)
 
     return True
