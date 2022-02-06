@@ -382,7 +382,7 @@ def create_blender_nodes(context, model, messages: list) -> bool:
                 else:
                     print(f"Warning: Failed to load normal texture '{texture_file_path}'")
         else:
-            print("Found existing material '{material.name}', skipping creation")
+            print(f"Found existing material '{material.name}', skipping creation")
 
     for node in model.nodes:
         if node.parent_id < 0:
