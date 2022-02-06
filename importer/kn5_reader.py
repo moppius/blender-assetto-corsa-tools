@@ -12,9 +12,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import random
 import struct
 import bpy
 import bmesh
+from math import sqrt
 from os import linesep, makedirs, path
 from mathutils import Matrix, Vector
 from .importer_utils import convert_matrix, convert_vector3
@@ -58,6 +60,10 @@ class KN5Material():
         self.normalMult = 1.0
         self.useDetail = 0.0
         self.detailUVMultiplier = 1.0
+
+        self.alpha_blend_mode = 0
+        self.alpha_tested = False
+        self.depth_mode = 0
 
         self.txDiffuse = None
         self.txNormal = None
@@ -145,9 +151,9 @@ class KN5Reader():
             material.name = self.read_string()
             material.shader = self.read_string()
             # TODO: Version handling?
-            _alpha_blend_mode = self.read_byte()
-            _alpha_tested = self.read_bool()
-            _depth_mode = self.read_int()
+            material.alpha_blend_mode = self.read_byte()
+            material.alpha_tested = self.read_bool()
+            material.depth_mode = self.read_int()
 
             num_props = self.read_int()
             for _prop in range(num_props):
@@ -324,10 +330,57 @@ def create_blender_nodes(context, model, messages: list) -> bool:
             else:
                 print(f"Warning: Texture file already exists: {texture.filename}")
 
+    random.seed(0)
     for material in model.materials:
         if not bpy.data.materials.get(material.name):
             new_material = bpy.data.materials.new(name=material.name)
-            print(f"Created material: {new_material.name}")
+            new_material.use_nodes = True
+            new_material.use_backface_culling = True
+
+            if material.alpha_blend_mode == 1:
+                new_material.blend_method = 'BLEND'
+            elif material.alpha_blend_mode == 2 or material.alpha_tested:
+                new_material.blend_method = 'CLIP'
+                new_material.alpha_threshold = 0.333
+
+            node_tree = new_material.node_tree
+            bsdf = node_tree.nodes.get('Principled BSDF')
+            bsdf.inputs['Base Color'].default_value = (random.random(), random.random(), random.random(), 1)
+            bsdf.inputs['Specular'].default_value = getattr(material, 'ksSpecular', 0.5)
+            bsdf.inputs['Roughness'].default_value = _approximate_roughness_from_exponent(getattr(material, 'ksSpecularEXP', 100))
+
+            diffuse_texture = getattr(material, 'txDiffuse')
+            if diffuse_texture:
+                texture_file_path = path.join(model.folder, TEXTURE_FOLDER, diffuse_texture)
+                if path.exists(texture_file_path):
+                    texture = bpy.data.images.load(texture_file_path, check_existing=True)
+                    texture.colorspace_settings.name = 'sRGB'
+                    image_node = node_tree.nodes.new('ShaderNodeTexImage')
+                    image_node.image = texture
+                    node_tree.links.new(bsdf.inputs['Base Color'], image_node.outputs['Color'])
+                    if material.alpha_tested or material.alpha_blend_mode != 0:
+                        node_tree.links.new(bsdf.inputs['Alpha'], image_node.outputs['Alpha'])
+                else:
+                    print(f"Warning: Failed to load diffuse texture '{texture_file_path}'")
+
+            normal_texture = getattr(material, 'txNormal')
+            if normal_texture:
+                texture_file_path = path.join(model.folder, TEXTURE_FOLDER, normal_texture)
+                if path.exists(texture_file_path):
+                    texture = bpy.data.images.load(texture_file_path, check_existing=True)
+                    texture.colorspace_settings.name = 'Non-Color'
+                    image_node = node_tree.nodes.new('ShaderNodeTexImage')
+                    image_node.image = texture
+                    rgb_curves_node = node_tree.nodes.new('ShaderNodeRGBCurve')
+                    green_curve = rgb_curves_node.mapping.curves[1]
+                    green_curve.points[0].location = (0, 1)
+                    green_curve.points[1].location = (1, 0)
+                    node_tree.links.new(rgb_curves_node.inputs['Color'], image_node.outputs['Color'])
+                    normal_map_node = node_tree.nodes.new('ShaderNodeNormalMap')
+                    node_tree.links.new(normal_map_node.inputs['Color'], rgb_curves_node.outputs['Color'])
+                    node_tree.links.new(bsdf.inputs['Normal'], normal_map_node.outputs['Normal'])
+                else:
+                    print(f"Warning: Failed to load normal texture '{texture_file_path}'")
         else:
             print("Found existing material '{material.name}', skipping creation")
 
@@ -375,3 +428,7 @@ def create_blender_nodes(context, model, messages: list) -> bool:
             context.scene.collection.objects.link(new_object)
 
     return True
+
+
+def _approximate_roughness_from_exponent(exponent: float):
+    return 1.0 - (sqrt(exponent) / 16.0)
