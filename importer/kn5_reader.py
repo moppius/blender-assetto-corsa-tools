@@ -16,7 +16,7 @@ import struct
 import bpy
 from os import linesep, makedirs, path
 from mathutils import Matrix, Vector
-from .importer_utils import convert_matrix
+from .importer_utils import convert_matrix, convert_vector3
 from ..utils.constants import ENCODING, KN5_HEADER_BYTES
 
 
@@ -192,7 +192,7 @@ class KN5Reader():
             node.uv = []
 
             for _vertex in range(node.vertexCount):
-                node.position.append(self.read_vector3())
+                node.position.append(convert_vector3(self.read_vector3()))
                 node.normal.append(self.read_vector3())
                 node.uv.append(self.read_vector2())
                 node.tangent.append(self.read_vector3())
@@ -341,6 +341,10 @@ def create_blender_nodes(context, model, messages: list) -> bool:
 
         elif node.type == NODE_TYPE_STATIC_MESH:
             mesh_data = bpy.data.meshes.new(name=f"{node.name}_Mesh")
+            faces = []
+            for i in range(0, len(node.indices), 3):
+                faces.append([node.indices[i], node.indices[i + 1], node.indices[i + 2]])
+            mesh_data.from_pydata(node.position, [], faces)
             new_object = bpy.data.objects.new(name=node.name, object_data=mesh_data)
 
         else:
