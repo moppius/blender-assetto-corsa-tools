@@ -198,17 +198,19 @@ class KN5Reader():
             node.normal = []
             node.uv = []
 
+            node.position = [0 for _i in range(node.vertexCount)]
+            node.normal = [0 for _i in range(node.vertexCount)]
+            node.uv = [0 for _i in range(node.vertexCount)]
+            node.tangent = [0 for _i in range(node.vertexCount)]
             for _vertex in range(node.vertexCount):
-                node.position.append(convert_vector3(self.read_vector3()))
-                node.normal.append(self.read_vector3())
+                node.position[_vertex] = convert_vector3(self.read_vector3())
+                node.normal[_vertex] = self.read_vector3()
                 inverted_uv = self.read_vector2()
-                node.uv.append((inverted_uv[0], -inverted_uv[1]))
-                node.tangent.append(self.read_vector3())
+                node.uv[_vertex] = (inverted_uv[0], -inverted_uv[1])
+                node.tangent[_vertex] = self.read_vector3()
 
             num_indices = self.read_uint()
-            node.indices = [0 for _i in range(num_indices)]
-            for i in range(num_indices):
-                node.indices[i] = self.read_ushort()
+            node.indices = [self.read_ushort() for _i in range(num_indices)]
 
             node.material_id = self.read_uint()
             layer = self.read_uint()
@@ -218,7 +220,6 @@ class KN5Reader():
             sphere_center = self.read_vector3()
             sphere_radius = self.read_float()
             is_renderable = self.read_bool()
-
 
         elif node.type == NODE_TYPE_ANIMATED_MESH:
             '''
