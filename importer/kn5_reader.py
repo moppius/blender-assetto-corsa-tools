@@ -189,38 +189,39 @@ class KN5Reader():
             node.tmatrix = self.read_matrix()
 
         elif node.type == NODE_TYPE_STATIC_MESH:
-            cast_shadows = self.read_bool()
-            visible = self.read_bool()
-            transparent = self.read_bool()
+            render_options = struct.Struct("3?")
+            cast_shadows, visible, transparent = render_options.unpack(self.file.read(render_options.size))
 
             node.vertexCount = self.read_uint()
-            node.position = []
-            node.normal = []
-            node.uv = []
 
             node.position = [0 for _i in range(node.vertexCount)]
             node.normal = [0 for _i in range(node.vertexCount)]
             node.uv = [0 for _i in range(node.vertexCount)]
             node.tangent = [0 for _i in range(node.vertexCount)]
+
+            vertex = struct.Struct("11f")
             for _vertex in range(node.vertexCount):
-                node.position[_vertex] = convert_vector3(self.read_vector3())
-                node.normal[_vertex] = self.read_vector3()
-                inverted_uv = self.read_vector2()
+                unpacked_vertex_data = vertex.unpack(self.file.read(vertex.size))
+                node.position[_vertex] = convert_vector3(unpacked_vertex_data[0:3])
+                node.normal[_vertex] = unpacked_vertex_data[3:6]
+                inverted_uv = unpacked_vertex_data[6:8]
                 node.uv[_vertex] = (inverted_uv[0], -inverted_uv[1])
-                node.tangent[_vertex] = self.read_vector3()
+                node.tangent[_vertex] = unpacked_vertex_data[8:]
 
             num_indices = self.read_uint()
-            indices_struct = struct.Struct(f"{num_indices}H")
-            node.indices = indices_struct.unpack(self.file.read(indices_struct.size))
+            indices = struct.Struct(f"{num_indices}H")
+            node.indices = indices.unpack(self.file.read(indices.size))
 
-            node.material_id = self.read_uint()
-            layer = self.read_uint()
-            lod_in = self.read_float()
-            lod_out = self.read_float()
+            other_data = struct.Struct("2I6f?")
+            unpacked_other_data = other_data.unpack(self.file.read(other_data.size))
+            node.material_id = unpacked_other_data[0]
+            layer = unpacked_other_data[1]
+            lod_in = unpacked_other_data[2]
+            lod_out = unpacked_other_data[3]
             # Bounding sphere
-            sphere_center = self.read_vector3()
-            sphere_radius = self.read_float()
-            is_renderable = self.read_bool()
+            sphere_center = unpacked_other_data[4:7]
+            sphere_radius = unpacked_other_data[7]
+            is_renderable = unpacked_other_data[8]
 
         elif node.type == NODE_TYPE_ANIMATED_MESH:
             '''
