@@ -210,7 +210,8 @@ class KN5Reader():
                 node.tangent[_vertex] = self.read_vector3()
 
             num_indices = self.read_uint()
-            node.indices = [self.read_ushort() for _i in range(num_indices)]
+            indices_struct = struct.Struct(f"{num_indices}H")
+            node.indices = indices_struct.unpack(self.file.read(indices_struct.size))
 
             node.material_id = self.read_uint()
             layer = self.read_uint()
