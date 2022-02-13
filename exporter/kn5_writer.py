@@ -13,9 +13,7 @@
 
 
 import struct
-
-
-ENCODING = 'utf-8'
+from ..utils.constants import ENCODING
 
 
 class KN5Writer():

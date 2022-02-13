@@ -14,7 +14,7 @@
 # Copyright (C) 2014  Thomas Hagnhofer
 
 
-from . import exporter, ui
+from . import exporter, importer, ui
 from .utils import register_recursive, unregister_recursive
 
 
@@ -34,6 +34,7 @@ bl_info = {
 
 REGISTER_CLASSES = (
     exporter,
+    importer,
     ui,
 )
 
